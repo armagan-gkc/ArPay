@@ -13,6 +13,9 @@ namespace Arpay\DTO;
  */
 class RefundResponse implements \JsonSerializable
 {
+    /**
+     * @param array<string, mixed> $rawResponse
+     */
     public function __construct(
         protected readonly bool $successful,
         protected readonly string $transactionId = '',
@@ -24,6 +27,9 @@ class RefundResponse implements \JsonSerializable
 
     /**
      * Başarılı iade yanıtı oluşturur.
+     */
+    /**
+     * @param array<string, mixed> $rawResponse
      */
     public static function successful(
         string $transactionId,
@@ -40,6 +46,9 @@ class RefundResponse implements \JsonSerializable
 
     /**
      * Başarısız iade yanıtı oluşturur.
+     */
+    /**
+     * @param array<string, mixed> $rawResponse
      */
     public static function failed(
         string $errorCode = '',

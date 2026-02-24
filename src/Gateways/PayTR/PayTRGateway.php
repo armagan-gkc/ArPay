@@ -140,7 +140,7 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
         // Yanıtı değerlendir
         if (($data['status'] ?? '') === 'success') {
             return PaymentResponse::successful(
-                transactionId: $data['trans_id'] ?? $data['merchant_oid'] ?? $request->getOrderId(),
+                transactionId: $this->toString($data['trans_id'] ?? $data['merchant_oid'] ?? $request->getOrderId()),
                 orderId: $request->getOrderId(),
                 amount: $request->getAmount(),
                 rawResponse: $data,
@@ -148,8 +148,8 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
         }
 
         return PaymentResponse::failed(
-            errorCode: (string) ($data['err_no'] ?? 'UNKNOWN'),
-            errorMessage: $data['err_msg'] ?? 'PayTR ödeme başarısız.',
+            errorCode: $this->toString($data['err_no'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['err_msg'] ?? 'PayTR ödeme başarısız.'),
             rawResponse: $data,
         );
     }
@@ -201,8 +201,8 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
         }
 
         return RefundResponse::failed(
-            errorCode: (string) ($data['err_no'] ?? 'UNKNOWN'),
-            errorMessage: $data['err_msg'] ?? 'PayTR iade başarısız.',
+            errorCode: $this->toString($data['err_no'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['err_msg'] ?? 'PayTR iade başarısız.'),
             rawResponse: $data,
         );
     }
@@ -217,7 +217,7 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
         $orderId = $request->getOrderId() ?: $request->getTransactionId();
 
         $hashStr = $this->config->get('merchant_id') . $orderId . $this->config->get('merchant_salt');
-        $token = HashGenerator::hmacSha256Base64($hashStr, $this->config->get('merchant_key'));
+        $token = HashGenerator::hmacSha256Base64($hashStr, $this->toString($this->config->get('merchant_key', '')));
 
         $params = [
             'merchant_id' => $this->config->get('merchant_id'),
@@ -243,15 +243,15 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
             return QueryResponse::successful(
                 transactionId: $orderId,
                 orderId: $orderId,
-                amount: isset($data['payment_amount']) ? (float) $data['payment_amount'] / 100 : 0.0,
+                amount: isset($data['payment_amount']) ? $this->toFloat($data['payment_amount']) / 100 : 0.0,
                 status: $paymentStatus,
                 rawResponse: $data,
             );
         }
 
         return QueryResponse::failed(
-            errorCode: (string) ($data['err_no'] ?? 'UNKNOWN'),
-            errorMessage: $data['err_msg'] ?? 'PayTR sorgu başarısız.',
+            errorCode: $this->toString($data['err_no'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['err_msg'] ?? 'PayTR sorgu başarısız.'),
             rawResponse: $data,
         );
     }
@@ -316,7 +316,8 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
 
         if (($data['status'] ?? '') === 'success' && isset($data['token'])) {
             // PayTR iframe URL'sini oluştur
-            $iframeUrl = "https://www.paytr.com/odeme/guvenli/{$data['token']}";
+            $tokenStr = $this->toString($data['token']);
+            $iframeUrl = "https://www.paytr.com/odeme/guvenli/{$tokenStr}";
 
             $html = <<<HTML
             <!DOCTYPE html>
@@ -338,8 +339,8 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
         }
 
         return SecureInitResponse::failed(
-            errorCode: (string) ($data['err_no'] ?? 'UNKNOWN'),
-            errorMessage: $data['err_msg'] ?? 'PayTR 3D Secure başlatma başarısız.',
+            errorCode: $this->toString($data['err_no'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['err_msg'] ?? 'PayTR 3D Secure başlatma başarısız.'),
             rawResponse: $data,
         );
     }
@@ -356,16 +357,16 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
      */
     public function completeSecurePayment(SecureCallbackData $data): PaymentResponse
     {
-        $merchantOid = (string) $data->get('merchant_oid', '');
-        $status = (string) $data->get('status', '');
-        $totalAmount = (string) $data->get('total_amount', '');
-        $hash = (string) $data->get('hash', '');
+        $merchantOid = $this->toString($data->get('merchant_oid', ''));
+        $status = $this->toString($data->get('status', ''));
+        $totalAmount = $this->toString($data->get('total_amount', ''));
+        $hash = $this->toString($data->get('hash', ''));
 
         // Hash doğrulaması
         $isValid = PayTRHelper::verifyCallback(
             merchantOid: $merchantOid,
-            merchantSalt: $this->config->get('merchant_salt'),
-            merchantKey: $this->config->get('merchant_key'),
+            merchantSalt: $this->toString($this->config->get('merchant_salt', '')),
+            merchantKey: $this->toString($this->config->get('merchant_key', '')),
             status: $status,
             totalAmount: $totalAmount,
             expectedHash: $hash,
@@ -386,7 +387,7 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
 
         return PaymentResponse::failed(
             errorCode: 'PAYMENT_FAILED',
-            errorMessage: $data->get('failed_reason_msg', 'PayTR 3D Secure ödeme başarısız.'),
+            errorMessage: $this->toString($data->get('failed_reason_msg', 'PayTR 3D Secure ödeme başarısız.')),
             rawResponse: $data->toArray(),
         );
     }
@@ -424,7 +425,7 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
         ];
 
         $hashStr = $this->config->get('merchant_id') . $request->getPlanName() . $this->config->get('merchant_salt');
-        $params['paytr_token'] = HashGenerator::hmacSha256Base64($hashStr, $this->config->get('merchant_key'));
+        $params['paytr_token'] = HashGenerator::hmacSha256Base64($hashStr, $this->toString($this->config->get('merchant_key', '')));
 
         $response = $this->httpClient->post(
             $this->getActiveBaseUrl() . '/odeme/api/recurring',
@@ -435,15 +436,15 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
 
         if (($data['status'] ?? '') === 'success') {
             return SubscriptionResponse::successful(
-                subscriptionId: $data['subscription_id'] ?? '',
+                subscriptionId: $this->toString($data['subscription_id'] ?? ''),
                 status: 'active',
                 rawResponse: $data,
             );
         }
 
         return SubscriptionResponse::failed(
-            errorCode: (string) ($data['err_no'] ?? 'UNKNOWN'),
-            errorMessage: $data['err_msg'] ?? 'PayTR abonelik oluşturma başarısız.',
+            errorCode: $this->toString($data['err_no'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['err_msg'] ?? 'PayTR abonelik oluşturma başarısız.'),
             rawResponse: $data,
         );
     }
@@ -456,7 +457,7 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
     public function cancelSubscription(string $subscriptionId): SubscriptionResponse
     {
         $hashStr = $this->config->get('merchant_id') . $subscriptionId . $this->config->get('merchant_salt');
-        $token = HashGenerator::hmacSha256Base64($hashStr, $this->config->get('merchant_key'));
+        $token = HashGenerator::hmacSha256Base64($hashStr, $this->toString($this->config->get('merchant_key', '')));
 
         $params = [
             'merchant_id' => $this->config->get('merchant_id'),
@@ -480,8 +481,8 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
         }
 
         return SubscriptionResponse::failed(
-            errorCode: (string) ($data['err_no'] ?? 'UNKNOWN'),
-            errorMessage: $data['err_msg'] ?? 'PayTR abonelik iptali başarısız.',
+            errorCode: $this->toString($data['err_no'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['err_msg'] ?? 'PayTR abonelik iptali başarısız.'),
             rawResponse: $data,
         );
     }
@@ -494,7 +495,7 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
     public function queryInstallments(string $binNumber, float $amount): array
     {
         $hashStr = $this->config->get('merchant_id') . $binNumber . $this->config->get('merchant_salt');
-        $token = HashGenerator::hmacSha256Base64($hashStr, $this->config->get('merchant_key'));
+        $token = HashGenerator::hmacSha256Base64($hashStr, $this->toString($this->config->get('merchant_key', '')));
 
         $params = [
             'merchant_id' => $this->config->get('merchant_id'),
@@ -507,10 +508,13 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
 
         $installments = [];
 
-        if (($data['status'] ?? '') === 'success' && isset($data['installments'])) {
+        if (($data['status'] ?? '') === 'success' && isset($data['installments']) && is_array($data['installments'])) {
             foreach ($data['installments'] as $inst) {
-                $count = (int) ($inst['count'] ?? 0);
-                $rate = (float) ($inst['rate'] ?? 0);
+                if (!is_array($inst)) {
+                    continue;
+                }
+                $count = $this->toInt($inst['count'] ?? 0);
+                $rate = $this->toFloat($inst['rate'] ?? 0);
                 $totalAmount = $amount * (1 + $rate / 100);
                 $perInstallment = $totalAmount / max(1, $count);
 
@@ -539,5 +543,53 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
     protected function getTestBaseUrl(): string
     {
         return 'https://test.paytr.com';
+    }
+
+    /**
+     * Safely converts a mixed value to string.
+     */
+    private function toString(mixed $value): string
+    {
+        if (is_string($value)) {
+            return $value;
+        }
+        if (is_int($value) || is_float($value)) {
+            return (string) $value;
+        }
+
+        return '';
+    }
+
+    /**
+     * Safely converts a mixed value to float.
+     */
+    private function toFloat(mixed $value): float
+    {
+        if (is_float($value) || is_int($value)) {
+            return (float) $value;
+        }
+        if (is_string($value) && is_numeric($value)) {
+            return (float) $value;
+        }
+
+        return 0.0;
+    }
+
+    /**
+     * Safely converts a mixed value to int.
+     */
+    private function toInt(mixed $value): int
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+        if (is_float($value)) {
+            return (int) $value;
+        }
+        if (is_string($value) && is_numeric($value)) {
+            return (int) $value;
+        }
+
+        return 0;
     }
 }

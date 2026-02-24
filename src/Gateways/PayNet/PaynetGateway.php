@@ -121,16 +121,16 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
 
         if (($data['is_successful'] ?? false) === true || ($data['code'] ?? '') === '0') {
             return PaymentResponse::successful(
-                transactionId: $data['transaction_id'] ?? '',
-                orderId: $data['order_id'] ?? $request->getOrderId(),
+                transactionId: $this->toString($data['transaction_id'] ?? ''),
+                orderId: $this->toString($data['order_id'] ?? $request->getOrderId()),
                 amount: $request->getAmount(),
                 rawResponse: $data,
             );
         }
 
         return PaymentResponse::failed(
-            errorCode: $data['code'] ?? 'UNKNOWN',
-            errorMessage: $data['message'] ?? 'Paynet ödeme başarısız.',
+            errorCode: $this->toString($data['code'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['message'] ?? 'Paynet ödeme başarısız.'),
             rawResponse: $data,
         );
     }
@@ -163,15 +163,15 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
 
         if (($data['is_successful'] ?? false) === true) {
             return RefundResponse::successful(
-                transactionId: $data['transaction_id'] ?? $request->getTransactionId(),
+                transactionId: $this->toString($data['transaction_id'] ?? $request->getTransactionId()),
                 refundedAmount: $request->getAmount(),
                 rawResponse: $data,
             );
         }
 
         return RefundResponse::failed(
-            errorCode: $data['code'] ?? 'UNKNOWN',
-            errorMessage: $data['message'] ?? 'Paynet iade başarısız.',
+            errorCode: $this->toString($data['code'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['message'] ?? 'Paynet iade başarısız.'),
             rawResponse: $data,
         );
     }
@@ -202,17 +202,17 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
             };
 
             return QueryResponse::successful(
-                transactionId: $data['transaction_id'] ?? '',
-                orderId: $data['order_id'] ?? '',
-                amount: MoneyFormatter::toFloat((int) ($data['amount'] ?? 0)),
+                transactionId: $this->toString($data['transaction_id'] ?? ''),
+                orderId: $this->toString($data['order_id'] ?? ''),
+                amount: MoneyFormatter::toFloat($this->toInt($data['amount'] ?? 0)),
                 status: $status,
                 rawResponse: $data,
             );
         }
 
         return QueryResponse::failed(
-            errorCode: $data['code'] ?? 'UNKNOWN',
-            errorMessage: $data['message'] ?? 'Paynet sorgu başarısız.',
+            errorCode: $this->toString($data['code'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['message'] ?? 'Paynet sorgu başarısız.'),
             rawResponse: $data,
         );
     }
@@ -258,16 +258,16 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
         $data = $response->toArray();
 
         if (isset($data['html_content'])) {
-            return SecureInitResponse::html($data['html_content'], $data);
+            return SecureInitResponse::html($this->toString($data['html_content']), $data);
         }
 
         if (isset($data['redirect_url'])) {
-            return SecureInitResponse::redirect($data['redirect_url'], [], $data);
+            return SecureInitResponse::redirect($this->toString($data['redirect_url']), [], $data);
         }
 
         return SecureInitResponse::failed(
-            errorCode: $data['code'] ?? 'UNKNOWN',
-            errorMessage: $data['message'] ?? 'Paynet 3D Secure başlatma başarısız.',
+            errorCode: $this->toString($data['code'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['message'] ?? 'Paynet 3D Secure başlatma başarısız.'),
             rawResponse: $data,
         );
     }
@@ -292,23 +292,23 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
 
             if (($responseData['is_successful'] ?? false) === true) {
                 return PaymentResponse::successful(
-                    transactionId: $responseData['transaction_id'] ?? '',
-                    orderId: $responseData['order_id'] ?? $data->get('order_id', ''),
-                    amount: MoneyFormatter::toFloat((int) ($responseData['amount'] ?? 0)),
+                    transactionId: $this->toString($responseData['transaction_id'] ?? ''),
+                    orderId: $this->toString($responseData['order_id'] ?? $data->get('order_id', '')),
+                    amount: MoneyFormatter::toFloat($this->toInt($responseData['amount'] ?? 0)),
                     rawResponse: $responseData,
                 );
             }
 
             return PaymentResponse::failed(
-                errorCode: $responseData['code'] ?? 'UNKNOWN',
-                errorMessage: $responseData['message'] ?? 'Paynet 3D Secure ödeme tamamlama başarısız.',
+                errorCode: $this->toString($responseData['code'] ?? 'UNKNOWN'),
+                errorMessage: $this->toString($responseData['message'] ?? 'Paynet 3D Secure ödeme tamamlama başarısız.'),
                 rawResponse: $responseData,
             );
         }
 
         return PaymentResponse::failed(
-            errorCode: (string) $data->get('code', 'UNKNOWN'),
-            errorMessage: (string) $data->get('message', 'Paynet 3D Secure doğrulama başarısız.'),
+            errorCode: $this->toString($data->get('code', 'UNKNOWN')),
+            errorMessage: $this->toString($data->get('message', 'Paynet 3D Secure doğrulama başarısız.')),
             rawResponse: $data->toArray(),
         );
     }
@@ -348,14 +348,14 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
 
         if (($data['is_successful'] ?? false) === true) {
             return SubscriptionResponse::successful(
-                subscriptionId: $data['subscription_id'] ?? '',
+                subscriptionId: $this->toString($data['subscription_id'] ?? ''),
                 rawResponse: $data,
             );
         }
 
         return SubscriptionResponse::failed(
-            errorCode: $data['code'] ?? 'UNKNOWN',
-            errorMessage: $data['message'] ?? 'Paynet abonelik oluşturma başarısız.',
+            errorCode: $this->toString($data['code'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['message'] ?? 'Paynet abonelik oluşturma başarısız.'),
             rawResponse: $data,
         );
     }
@@ -379,8 +379,8 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
         }
 
         return SubscriptionResponse::failed(
-            errorCode: $data['code'] ?? 'UNKNOWN',
-            errorMessage: $data['message'] ?? 'Paynet abonelik iptali başarısız.',
+            errorCode: $this->toString($data['code'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['message'] ?? 'Paynet abonelik iptali başarısız.'),
             rawResponse: $data,
         );
     }
@@ -401,15 +401,21 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
         $data = $response->toArray();
 
         $installments = [];
-        foreach ($data['installment_list'] ?? [] as $inst) {
-            $count = (int) ($inst['count'] ?? 0);
-            if ($count > 0) {
-                $installments[] = InstallmentInfo::create(
-                    count: $count,
-                    perInstallment: MoneyFormatter::toFloat((int) ($inst['per_amount'] ?? 0)),
-                    total: MoneyFormatter::toFloat((int) ($inst['total_amount'] ?? 0)),
-                    interestRate: (float) ($inst['interest_rate'] ?? 0),
-                );
+        $installmentList = $data['installment_list'] ?? [];
+        if (is_array($installmentList)) {
+            foreach ($installmentList as $inst) {
+                if (!is_array($inst)) {
+                    continue;
+                }
+                $count = $this->toInt($inst['count'] ?? 0);
+                if ($count > 0) {
+                    $installments[] = InstallmentInfo::create(
+                        count: $count,
+                        perInstallment: MoneyFormatter::toFloat($this->toInt($inst['per_amount'] ?? 0)),
+                        total: MoneyFormatter::toFloat($this->toInt($inst['total_amount'] ?? 0)),
+                        interestRate: $this->toFloat($inst['interest_rate'] ?? 0),
+                    );
+                }
             }
         }
 
@@ -433,6 +439,8 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
 
     /**
      * Paynet API istekleri için standart başlıkları oluşturur.
+     *
+     * @return array<string, string>
      */
     private function buildHeaders(): array
     {
@@ -452,5 +460,20 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
         $hashStr = implode('', $params) . $this->config->get('secret_key');
 
         return HashGenerator::sha256($hashStr);
+    }
+
+    private function toString(mixed $value, string $default = ''): string
+    {
+        return is_string($value) ? $value : (is_numeric($value) ? (string) $value : $default);
+    }
+
+    private function toFloat(mixed $value, float $default = 0.0): float
+    {
+        return is_numeric($value) ? (float) $value : $default;
+    }
+
+    private function toInt(mixed $value, int $default = 0): int
+    {
+        return is_numeric($value) ? (int) $value : $default;
     }
 }

@@ -15,6 +15,9 @@ use Arpay\Enums\PaymentStatus;
  */
 class QueryResponse implements \JsonSerializable
 {
+    /**
+     * @param array<string, mixed> $rawResponse
+     */
     public function __construct(
         protected readonly bool $successful,
         protected readonly string $transactionId = '',
@@ -28,6 +31,9 @@ class QueryResponse implements \JsonSerializable
 
     /**
      * Başarılı sorgu yanıtı oluşturur.
+     */
+    /**
+     * @param array<string, mixed> $rawResponse
      */
     public static function successful(
         string $transactionId,
@@ -48,6 +54,9 @@ class QueryResponse implements \JsonSerializable
 
     /**
      * Başarısız sorgu yanıtı oluşturur.
+     */
+    /**
+     * @param array<string, mixed> $rawResponse
      */
     public static function failed(
         string $errorCode = '',

@@ -87,8 +87,8 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
         $jsonBody = json_encode($body, JSON_THROW_ON_ERROR);
 
         $headers = IyzicoHelper::generateHeaders(
-            $this->config->get('api_key'),
-            $this->config->get('secret_key'),
+            $this->toString($this->config->get('api_key')),
+            $this->toString($this->config->get('secret_key')),
             $jsonBody,
         );
 
@@ -134,8 +134,8 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
         $jsonBody = json_encode($body, JSON_THROW_ON_ERROR);
 
         $headers = IyzicoHelper::generateHeaders(
-            $this->config->get('api_key'),
-            $this->config->get('secret_key'),
+            $this->toString($this->config->get('api_key')),
+            $this->toString($this->config->get('secret_key')),
             $jsonBody,
         );
 
@@ -148,15 +148,15 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
 
         if (($data['status'] ?? '') === 'success') {
             return RefundResponse::successful(
-                transactionId: $data['paymentId'] ?? $request->getTransactionId(),
+                transactionId: $this->toString($data['paymentId'] ?? null, $request->getTransactionId()),
                 refundedAmount: $request->getAmount(),
                 rawResponse: $data,
             );
         }
 
         return RefundResponse::failed(
-            errorCode: (string) ($data['errorCode'] ?? 'UNKNOWN'),
-            errorMessage: $data['errorMessage'] ?? 'Iyzico iade başarısız.',
+            errorCode: $this->toString($data['errorCode'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($data['errorMessage'] ?? null, 'Iyzico iade başarısız.'),
             rawResponse: $data,
         );
     }
@@ -176,8 +176,8 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
         $jsonBody = json_encode($body, JSON_THROW_ON_ERROR);
 
         $headers = IyzicoHelper::generateHeaders(
-            $this->config->get('api_key'),
-            $this->config->get('secret_key'),
+            $this->toString($this->config->get('api_key')),
+            $this->toString($this->config->get('secret_key')),
             $jsonBody,
         );
 
@@ -198,17 +198,17 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
             };
 
             return QueryResponse::successful(
-                transactionId: $data['paymentId'] ?? '',
+                transactionId: $this->toString($data['paymentId'] ?? null),
                 orderId: $request->getOrderId(),
-                amount: isset($data['price']) ? (float) $data['price'] : 0.0,
+                amount: $this->toFloat($data['price'] ?? null),
                 status: $paymentStatus,
                 rawResponse: $data,
             );
         }
 
         return QueryResponse::failed(
-            errorCode: (string) ($data['errorCode'] ?? 'UNKNOWN'),
-            errorMessage: $data['errorMessage'] ?? 'Iyzico sorgu başarısız.',
+            errorCode: $this->toString($data['errorCode'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($data['errorMessage'] ?? null, 'Iyzico sorgu başarısız.'),
             rawResponse: $data,
         );
     }
@@ -234,8 +234,8 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
         $jsonBody = json_encode($body, JSON_THROW_ON_ERROR);
 
         $headers = IyzicoHelper::generateHeaders(
-            $this->config->get('api_key'),
-            $this->config->get('secret_key'),
+            $this->toString($this->config->get('api_key')),
+            $this->toString($this->config->get('secret_key')),
             $jsonBody,
         );
 
@@ -248,7 +248,7 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
 
         if (($data['status'] ?? '') === 'success' && isset($data['threeDSHtmlContent'])) {
             // Iyzico Base64 kodlanmış HTML döndürür
-            $htmlContent = base64_decode($data['threeDSHtmlContent'], true);
+            $htmlContent = base64_decode($this->toString($data['threeDSHtmlContent']), true);
 
             return SecureInitResponse::html(
                 false !== $htmlContent ? $htmlContent : '',
@@ -257,8 +257,8 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
         }
 
         return SecureInitResponse::failed(
-            errorCode: (string) ($data['errorCode'] ?? 'UNKNOWN'),
-            errorMessage: $data['errorMessage'] ?? 'Iyzico 3D Secure başlatma başarısız.',
+            errorCode: $this->toString($data['errorCode'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($data['errorMessage'] ?? null, 'Iyzico 3D Secure başlatma başarısız.'),
             rawResponse: $data,
         );
     }
@@ -270,7 +270,7 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
      */
     public function completeSecurePayment(SecureCallbackData $data): PaymentResponse
     {
-        $paymentId = (string) $data->get('paymentId', '');
+        $paymentId = $this->toString($data->get('paymentId', ''));
 
         $body = [
             'locale' => 'tr',
@@ -280,8 +280,8 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
         $jsonBody = json_encode($body, JSON_THROW_ON_ERROR);
 
         $headers = IyzicoHelper::generateHeaders(
-            $this->config->get('api_key'),
-            $this->config->get('secret_key'),
+            $this->toString($this->config->get('api_key')),
+            $this->toString($this->config->get('secret_key')),
             $jsonBody,
         );
 
@@ -327,8 +327,8 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
         $jsonBody = json_encode($body, JSON_THROW_ON_ERROR);
 
         $headers = IyzicoHelper::generateHeaders(
-            $this->config->get('api_key'),
-            $this->config->get('secret_key'),
+            $this->toString($this->config->get('api_key')),
+            $this->toString($this->config->get('secret_key')),
             $jsonBody,
         );
 
@@ -340,16 +340,18 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
         $data = $response->toArray();
 
         if (($data['status'] ?? '') === 'success') {
+            $nestedData = is_array($data['data'] ?? null) ? $data['data'] : [];
+
             return SubscriptionResponse::successful(
-                subscriptionId: $data['data']['referenceCode'] ?? '',
+                subscriptionId: $this->toString($nestedData['referenceCode'] ?? null),
                 status: 'active',
                 rawResponse: $data,
             );
         }
 
         return SubscriptionResponse::failed(
-            errorCode: (string) ($data['errorCode'] ?? 'UNKNOWN'),
-            errorMessage: $data['errorMessage'] ?? 'Iyzico abonelik oluşturma başarısız.',
+            errorCode: $this->toString($data['errorCode'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($data['errorMessage'] ?? null, 'Iyzico abonelik oluşturma başarısız.'),
             rawResponse: $data,
         );
     }
@@ -369,8 +371,8 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
         $jsonBody = json_encode($body, JSON_THROW_ON_ERROR);
 
         $headers = IyzicoHelper::generateHeaders(
-            $this->config->get('api_key'),
-            $this->config->get('secret_key'),
+            $this->toString($this->config->get('api_key')),
+            $this->toString($this->config->get('secret_key')),
             $jsonBody,
         );
 
@@ -390,8 +392,8 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
         }
 
         return SubscriptionResponse::failed(
-            errorCode: (string) ($data['errorCode'] ?? 'UNKNOWN'),
-            errorMessage: $data['errorMessage'] ?? 'Iyzico abonelik iptali başarısız.',
+            errorCode: $this->toString($data['errorCode'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($data['errorMessage'] ?? null, 'Iyzico abonelik iptali başarısız.'),
             rawResponse: $data,
         );
     }
@@ -412,8 +414,8 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
         $jsonBody = json_encode($body, JSON_THROW_ON_ERROR);
 
         $headers = IyzicoHelper::generateHeaders(
-            $this->config->get('api_key'),
-            $this->config->get('secret_key'),
+            $this->toString($this->config->get('api_key')),
+            $this->toString($this->config->get('secret_key')),
             $jsonBody,
         );
 
@@ -427,15 +429,20 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
         $installments = [];
 
         if (($data['status'] ?? '') === 'success' && isset($data['installmentDetails'])) {
-            foreach ($data['installmentDetails'] as $detail) {
-                if (!isset($detail['installmentPrices'])) {
+            $details = is_array($data['installmentDetails']) ? $data['installmentDetails'] : [];
+            foreach ($details as $detail) {
+                if (!is_array($detail) || !isset($detail['installmentPrices'])) {
                     continue;
                 }
 
-                foreach ($detail['installmentPrices'] as $inst) {
-                    $count = (int) ($inst['installmentNumber'] ?? 0);
-                    $total = (float) ($inst['totalPrice'] ?? 0);
-                    $perInst = (float) ($inst['installmentPrice'] ?? 0);
+                $prices = is_array($detail['installmentPrices']) ? $detail['installmentPrices'] : [];
+                foreach ($prices as $inst) {
+                    if (!is_array($inst)) {
+                        continue;
+                    }
+                    $count = $this->toInt($inst['installmentNumber'] ?? null);
+                    $total = $this->toFloat($inst['totalPrice'] ?? null);
+                    $perInst = $this->toFloat($inst['installmentPrice'] ?? null);
 
                     if ($count > 0) {
                         $rate = $amount > 0 ? (($total - $amount) / $amount) * 100 : 0;
@@ -462,12 +469,12 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
     protected function getBaseUrl(): string
     {
         // base_url config'den özelleştirilebilir
-        return $this->config->get('base_url', self::LIVE_BASE_URL);
+        return $this->toString($this->config->get('base_url'), self::LIVE_BASE_URL);
     }
 
     protected function getTestBaseUrl(): string
     {
-        return $this->config->get('base_url', self::SANDBOX_BASE_URL);
+        return $this->toString($this->config->get('base_url'), self::SANDBOX_BASE_URL);
     }
 
     /**
@@ -566,17 +573,32 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
     {
         if (($data['status'] ?? '') === 'success') {
             return PaymentResponse::successful(
-                transactionId: $data['paymentId'] ?? '',
-                orderId: $orderId ?: ($data['conversationId'] ?? ''),
-                amount: isset($data['price']) ? (float) $data['price'] : 0.0,
+                transactionId: $this->toString($data['paymentId'] ?? null),
+                orderId: $orderId ?: $this->toString($data['conversationId'] ?? null),
+                amount: $this->toFloat($data['price'] ?? null),
                 rawResponse: $data,
             );
         }
 
         return PaymentResponse::failed(
-            errorCode: (string) ($data['errorCode'] ?? 'UNKNOWN'),
-            errorMessage: $data['errorMessage'] ?? 'Iyzico ödeme başarısız.',
+            errorCode: $this->toString($data['errorCode'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($data['errorMessage'] ?? null, 'Iyzico ödeme başarısız.'),
             rawResponse: $data,
         );
+    }
+
+    private function toString(mixed $value, string $default = ''): string
+    {
+        return is_string($value) ? $value : $default;
+    }
+
+    private function toFloat(mixed $value, float $default = 0.0): float
+    {
+        return is_numeric($value) ? (float) $value : $default;
+    }
+
+    private function toInt(mixed $value, int $default = 0): int
+    {
+        return is_numeric($value) ? (int) $value : $default;
     }
 }

@@ -11,6 +11,8 @@ namespace Arpay\DTO;
  * sorgulamak için gerekli bilgileri tutar.
  *
  * @author Armağan Gökce
+ *
+ * @phpstan-consistent-constructor
  */
 class QueryRequest
 {
@@ -22,7 +24,7 @@ class QueryRequest
 
     public static function create(): static
     {
-        return new static();
+        return new static(); // @phpstan-ignore new.static
     }
 
     /**

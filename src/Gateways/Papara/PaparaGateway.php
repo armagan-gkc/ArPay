@@ -68,7 +68,7 @@ class PaparaGateway extends AbstractGateway implements PayableInterface, Refunda
             'referenceId' => $request->getOrderId(),
             'amount' => MoneyFormatter::toDecimalString($request->getAmount()),
             'currency' => $this->mapCurrency($request->getCurrency()),
-            'description' => $request->getDescription() ?? 'Ödeme',
+            'description' => $request->getDescription() ?: 'Ödeme',
             'installmentCount' => $request->getInstallmentCount(),
             'cardHolderName' => $card->cardHolderName,
             'cardNumber' => $card->cardNumber,
@@ -104,21 +104,21 @@ class PaparaGateway extends AbstractGateway implements PayableInterface, Refunda
         $data = $response->toArray();
 
         if (($data['succeeded'] ?? false) === true) {
-            $result = $data['data'] ?? $data;
+            $innerData = is_array($data['data'] ?? null) ? $data['data'] : [];
 
             return PaymentResponse::successful(
-                transactionId: (string) ($result['id'] ?? $result['paymentId'] ?? ''),
-                orderId: (string) ($result['referenceId'] ?? $request->getOrderId()),
+                transactionId: $this->toString($innerData['id'] ?? $innerData['paymentId'] ?? ''),
+                orderId: $this->toString($innerData['referenceId'] ?? $request->getOrderId()),
                 amount: $request->getAmount(),
                 rawResponse: $data,
             );
         }
 
-        $error = $data['error'] ?? $data;
+        $error = is_array($data['error'] ?? null) ? $data['error'] : [];
 
         return PaymentResponse::failed(
-            errorCode: (string) ($error['code'] ?? $data['errorCode'] ?? 'UNKNOWN'),
-            errorMessage: $error['message'] ?? $data['errorMessage'] ?? 'Papara ödeme başarısız.',
+            errorCode: $this->toString($error['code'] ?? $data['errorCode'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($error['message'] ?? $data['errorMessage'] ?? null, 'Papara ödeme başarısız.'),
             rawResponse: $data,
         );
     }
@@ -135,7 +135,7 @@ class PaparaGateway extends AbstractGateway implements PayableInterface, Refunda
             'paymentId' => $request->getTransactionId(),
             'referenceId' => $request->getOrderId(),
             'refundAmount' => MoneyFormatter::toDecimalString($request->getAmount()),
-            'description' => $request->getReason() ?? 'İade',
+            'description' => $request->getReason() ?: 'İade',
         ];
 
         $response = $this->httpClient->post(
@@ -146,20 +146,20 @@ class PaparaGateway extends AbstractGateway implements PayableInterface, Refunda
         $data = $response->toArray();
 
         if (($data['succeeded'] ?? false) === true) {
-            $result = $data['data'] ?? $data;
+            $innerData = is_array($data['data'] ?? null) ? $data['data'] : [];
 
             return RefundResponse::successful(
-                transactionId: (string) ($result['id'] ?? $request->getTransactionId()),
+                transactionId: $this->toString($innerData['id'] ?? $request->getTransactionId()),
                 refundedAmount: $request->getAmount(),
                 rawResponse: $data,
             );
         }
 
-        $error = $data['error'] ?? $data;
+        $error = is_array($data['error'] ?? null) ? $data['error'] : [];
 
         return RefundResponse::failed(
-            errorCode: (string) ($error['code'] ?? 'UNKNOWN'),
-            errorMessage: $error['message'] ?? 'Papara iade başarısız.',
+            errorCode: $this->toString($error['code'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($error['message'] ?? null, 'Papara iade başarısız.'),
             rawResponse: $data,
         );
     }
@@ -175,9 +175,9 @@ class PaparaGateway extends AbstractGateway implements PayableInterface, Refunda
         $data = $response->toArray();
 
         if (($data['succeeded'] ?? false) === true) {
-            $result = $data['data'] ?? $data;
+            $innerData = is_array($data['data'] ?? null) ? $data['data'] : [];
 
-            $status = match ((int) ($result['status'] ?? -1)) {
+            $status = match ($this->toInt($innerData['status'] ?? -1, -1)) {
                 0 => PaymentStatus::Pending,
                 1 => PaymentStatus::Successful,
                 2 => PaymentStatus::Refunded,
@@ -186,19 +186,19 @@ class PaparaGateway extends AbstractGateway implements PayableInterface, Refunda
             };
 
             return QueryResponse::successful(
-                transactionId: (string) ($result['id'] ?? ''),
-                orderId: (string) ($result['referenceId'] ?? ''),
-                amount: (float) ($result['amount'] ?? 0),
+                transactionId: $this->toString($innerData['id'] ?? ''),
+                orderId: $this->toString($innerData['referenceId'] ?? ''),
+                amount: $this->toFloat($innerData['amount'] ?? 0),
                 status: $status,
                 rawResponse: $data,
             );
         }
 
-        $error = $data['error'] ?? $data;
+        $error = is_array($data['error'] ?? null) ? $data['error'] : [];
 
         return QueryResponse::failed(
-            errorCode: (string) ($error['code'] ?? 'UNKNOWN'),
-            errorMessage: $error['message'] ?? 'Papara sorgu başarısız.',
+            errorCode: $this->toString($error['code'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($error['message'] ?? null, 'Papara sorgu başarısız.'),
             rawResponse: $data,
         );
     }
@@ -220,13 +220,15 @@ class PaparaGateway extends AbstractGateway implements PayableInterface, Refunda
 
     /**
      * Papara API istekleri için standart başlıkları oluşturur.
+     *
+     * @return array<string, string>
      */
     private function buildHeaders(): array
     {
         return [
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
-            'ApiKey' => $this->config->get('api_key'),
+            'ApiKey' => $this->toString($this->config->get('api_key')),
         ];
     }
 
@@ -242,5 +244,20 @@ class PaparaGateway extends AbstractGateway implements PayableInterface, Refunda
             'GBP' => 3,
             default => 0,
         };
+    }
+
+    private function toString(mixed $value, string $default = ''): string
+    {
+        return is_string($value) ? $value : $default;
+    }
+
+    private function toFloat(mixed $value, float $default = 0.0): float
+    {
+        return is_numeric($value) ? (float) $value : $default;
+    }
+
+    private function toInt(mixed $value, int $default = 0): int
+    {
+        return is_numeric($value) ? (int) $value : $default;
     }
 }

@@ -20,10 +20,10 @@ class SecureInitResponse implements \JsonSerializable
      * @param bool $redirectRequired Yönlendirme gerekli mi?
      * @param string $redirectUrl Yönlendirme URL'si
      * @param string $htmlForm Otomatik gönderimli HTML form kodu
-     * @param array $formData Form POST parametreleri
+     * @param array<string, string> $formData Form POST parametreleri
      * @param string $errorCode Hata kodu (başarısızsa)
      * @param string $errorMessage Hata mesajı (başarısızsa)
-     * @param array $rawResponse Gateway ham yanıtı
+     * @param array<string, mixed> $rawResponse Gateway ham yanıtı
      */
     public function __construct(
         protected readonly bool $redirectRequired,
@@ -39,8 +39,8 @@ class SecureInitResponse implements \JsonSerializable
      * Yönlendirme gerektiren başarılı yanıt oluşturur.
      *
      * @param string $redirectUrl Banka yönlendirme URL'si
-     * @param array $formData POST form verileri
-     * @param array $rawResponse Gateway ham yanıtı
+     * @param array<string, string> $formData POST form verileri
+     * @param array<string, mixed> $rawResponse Gateway ham yanıtı
      */
     public static function redirect(
         string $redirectUrl,
@@ -64,6 +64,9 @@ class SecureInitResponse implements \JsonSerializable
      *
      * Bazı gateway'ler (PayTR gibi) doğrudan HTML içerik döndürür.
      */
+    /**
+     * @param array<string, mixed> $rawResponse
+     */
     public static function html(string $htmlContent, array $rawResponse = []): self
     {
         return new self(
@@ -75,6 +78,9 @@ class SecureInitResponse implements \JsonSerializable
 
     /**
      * Başarısız 3D başlatma yanıtı oluşturur.
+     */
+    /**
+     * @param array<string, mixed> $rawResponse
      */
     public static function failed(
         string $errorCode = '',
@@ -196,7 +202,7 @@ class SecureInitResponse implements \JsonSerializable
         $inputs = '';
         foreach ($formData as $name => $value) {
             $safeName = htmlspecialchars((string) $name, ENT_QUOTES, 'UTF-8');
-            $safeValue = htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+            $safeValue = htmlspecialchars(is_scalar($value) ? (string) $value : '', ENT_QUOTES, 'UTF-8');
             $inputs .= "<input type=\"hidden\" name=\"{$safeName}\" value=\"{$safeValue}\">\n";
         }
 

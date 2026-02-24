@@ -76,7 +76,7 @@ class PayUGateway extends AbstractGateway implements PayableInterface, Refundabl
             'MERCHANT' => $this->config->get('merchant'),
             'ORDER_REF' => $request->getOrderId(),
             'ORDER_DATE' => gmdate('Y-m-d H:i:s'),
-            'ORDER_PNAME[]' => $request->getDescription() ?? 'Ödeme',
+            'ORDER_PNAME[]' => $request->getDescription() ?: 'Ödeme',
             'ORDER_PCODE[]' => $request->getOrderId(),
             'ORDER_PPRICE[]' => $amount,
             'ORDER_PQTY[]' => '1',
@@ -113,16 +113,16 @@ class PayUGateway extends AbstractGateway implements PayableInterface, Refundabl
 
         if (($data['STATUS'] ?? '') === 'SUCCESS' || ($data['RETURN_CODE'] ?? '') === 'AUTHORIZED') {
             return PaymentResponse::successful(
-                transactionId: $data['REFNO'] ?? '',
-                orderId: $data['ORDER_REF'] ?? $request->getOrderId(),
+                transactionId: $this->toString($data['REFNO'] ?? ''),
+                orderId: $this->toString($data['ORDER_REF'] ?? $request->getOrderId()),
                 amount: $request->getAmount(),
                 rawResponse: $data,
             );
         }
 
         return PaymentResponse::failed(
-            errorCode: $data['RETURN_CODE'] ?? 'UNKNOWN',
-            errorMessage: $data['RETURN_MESSAGE'] ?? 'PayU ödeme başarısız.',
+            errorCode: $this->toString($data['RETURN_CODE'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['RETURN_MESSAGE'] ?? 'PayU ödeme başarısız.'),
             rawResponse: $data,
         );
     }
@@ -152,15 +152,15 @@ class PayUGateway extends AbstractGateway implements PayableInterface, Refundabl
 
         if (($data['RESPONSE_CODE'] ?? '') === '0' || ($data['STATUS'] ?? '') === 'SUCCESS') {
             return RefundResponse::successful(
-                transactionId: $data['IRN_REFNO'] ?? $request->getTransactionId(),
+                transactionId: $this->toString($data['IRN_REFNO'] ?? $request->getTransactionId()),
                 refundedAmount: $request->getAmount(),
                 rawResponse: $data,
             );
         }
 
         return RefundResponse::failed(
-            errorCode: $data['RESPONSE_CODE'] ?? 'UNKNOWN',
-            errorMessage: $data['RESPONSE_MSG'] ?? 'PayU iade başarısız.',
+            errorCode: $this->toString($data['RESPONSE_CODE'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['RESPONSE_MSG'] ?? 'PayU iade başarısız.'),
             rawResponse: $data,
         );
     }
@@ -190,17 +190,17 @@ class PayUGateway extends AbstractGateway implements PayableInterface, Refundabl
 
         if (!empty($data['ORDER_REF'])) {
             return QueryResponse::successful(
-                transactionId: $data['REFNO'] ?? '',
-                orderId: $data['ORDER_REF'] ?? '',
-                amount: (float) ($data['ORDER_AMOUNT'] ?? 0),
+                transactionId: $this->toString($data['REFNO'] ?? ''),
+                orderId: $this->toString($data['ORDER_REF']),
+                amount: $this->toFloat($data['ORDER_AMOUNT'] ?? 0),
                 status: $status,
                 rawResponse: $data,
             );
         }
 
         return QueryResponse::failed(
-            errorCode: $data['RESPONSE_CODE'] ?? 'UNKNOWN',
-            errorMessage: $data['RESPONSE_MSG'] ?? 'PayU sorgu başarısız.',
+            errorCode: $this->toString($data['RESPONSE_CODE'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['RESPONSE_MSG'] ?? 'PayU sorgu başarısız.'),
             rawResponse: $data,
         );
     }
@@ -219,7 +219,7 @@ class PayUGateway extends AbstractGateway implements PayableInterface, Refundabl
             'MERCHANT' => $this->config->get('merchant'),
             'ORDER_REF' => $request->getOrderId(),
             'ORDER_DATE' => gmdate('Y-m-d H:i:s'),
-            'ORDER_PNAME[]' => $request->getDescription() ?? 'Ödeme',
+            'ORDER_PNAME[]' => $request->getDescription() ?: 'Ödeme',
             'ORDER_PCODE[]' => $request->getOrderId(),
             'ORDER_PPRICE[]' => $amount,
             'ORDER_PQTY[]' => '1',
@@ -252,16 +252,16 @@ class PayUGateway extends AbstractGateway implements PayableInterface, Refundabl
         $data = $response->toArray();
 
         if (isset($data['URL_3DS'])) {
-            return SecureInitResponse::redirect($data['URL_3DS'], [], $data);
+            return SecureInitResponse::redirect($this->toString($data['URL_3DS']), [], $data);
         }
 
         if (isset($data['3DS_HTML'])) {
-            return SecureInitResponse::html($data['3DS_HTML'], $data);
+            return SecureInitResponse::html($this->toString($data['3DS_HTML']), $data);
         }
 
         return SecureInitResponse::failed(
-            errorCode: $data['RETURN_CODE'] ?? 'UNKNOWN',
-            errorMessage: $data['RETURN_MESSAGE'] ?? 'PayU 3D Secure başlatma başarısız.',
+            errorCode: $this->toString($data['RETURN_CODE'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['RETURN_MESSAGE'] ?? 'PayU 3D Secure başlatma başarısız.'),
             rawResponse: $data,
         );
     }
@@ -272,16 +272,16 @@ class PayUGateway extends AbstractGateway implements PayableInterface, Refundabl
 
         if ('SUCCESS' === $status || 'AUTHORIZED' === $status) {
             return PaymentResponse::successful(
-                transactionId: (string) $data->get('REFNO', $data->get('refno', '')),
-                orderId: (string) $data->get('ORDER_REF', $data->get('order_ref', '')),
-                amount: (float) $data->get('ORDER_AMOUNT', $data->get('amount', 0)),
+                transactionId: $this->toString($data->get('REFNO', $data->get('refno', ''))),
+                orderId: $this->toString($data->get('ORDER_REF', $data->get('order_ref', ''))),
+                amount: $this->toFloat($data->get('ORDER_AMOUNT', $data->get('amount', 0))),
                 rawResponse: $data->toArray(),
             );
         }
 
         return PaymentResponse::failed(
-            errorCode: (string) $data->get('RETURN_CODE', 'UNKNOWN'),
-            errorMessage: (string) $data->get('RETURN_MESSAGE', 'PayU 3D Secure ödeme başarısız.'),
+            errorCode: $this->toString($data->get('RETURN_CODE', 'UNKNOWN')),
+            errorMessage: $this->toString($data->get('RETURN_MESSAGE', 'PayU 3D Secure ödeme başarısız.')),
             rawResponse: $data->toArray(),
         );
     }
@@ -322,14 +322,14 @@ class PayUGateway extends AbstractGateway implements PayableInterface, Refundabl
 
         if (($data['STATUS'] ?? '') === 'SUCCESS') {
             return SubscriptionResponse::successful(
-                subscriptionId: $data['IPN_CC_TOKEN'] ?? $data['TOKEN'] ?? '',
+                subscriptionId: $this->toString($data['IPN_CC_TOKEN'] ?? $data['TOKEN'] ?? ''),
                 rawResponse: $data,
             );
         }
 
         return SubscriptionResponse::failed(
-            errorCode: $data['RETURN_CODE'] ?? 'UNKNOWN',
-            errorMessage: $data['RETURN_MESSAGE'] ?? 'PayU abonelik oluşturma başarısız.',
+            errorCode: $this->toString($data['RETURN_CODE'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['RETURN_MESSAGE'] ?? 'PayU abonelik oluşturma başarısız.'),
             rawResponse: $data,
         );
     }
@@ -353,8 +353,8 @@ class PayUGateway extends AbstractGateway implements PayableInterface, Refundabl
         }
 
         return SubscriptionResponse::failed(
-            errorCode: $data['RETURN_CODE'] ?? 'UNKNOWN',
-            errorMessage: $data['RETURN_MESSAGE'] ?? 'PayU abonelik iptali başarısız.',
+            errorCode: $this->toString($data['RETURN_CODE'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['RETURN_MESSAGE'] ?? 'PayU abonelik iptali başarısız.'),
             rawResponse: $data,
         );
     }
@@ -381,8 +381,8 @@ class PayUGateway extends AbstractGateway implements PayableInterface, Refundabl
      */
     private function generateSignature(string $orderRef, string $amount, string $currency): string
     {
-        $merchant = $this->config->get('merchant');
-        $secretKey = $this->config->get('secret_key');
+        $merchant = $this->toString($this->config->get('merchant'));
+        $secretKey = $this->toString($this->config->get('secret_key'));
         $hashString = strlen($merchant) . $merchant
             . strlen($orderRef) . $orderRef
             . strlen($amount) . $amount
@@ -393,6 +393,8 @@ class PayUGateway extends AbstractGateway implements PayableInterface, Refundabl
 
     /**
      * PayU API istekleri için standart başlıkları oluşturur.
+     *
+     * @return array<string, string>
      */
     private function buildHeaders(): array
     {
@@ -400,5 +402,15 @@ class PayUGateway extends AbstractGateway implements PayableInterface, Refundabl
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
         ];
+    }
+
+    private function toString(mixed $value, string $default = ''): string
+    {
+        return is_string($value) ? $value : $default;
+    }
+
+    private function toFloat(mixed $value, float $default = 0.0): float
+    {
+        return is_numeric($value) ? (float) $value : $default;
     }
 }

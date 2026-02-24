@@ -98,7 +98,7 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
 
         if (($data['Sonuc'] ?? '') === '1' || ($data['result_code'] ?? '') === '00') {
             return PaymentResponse::successful(
-                transactionId: $data['Dekont_ID'] ?? $data['transaction_id'] ?? '',
+                transactionId: $this->toString($data['Dekont_ID'] ?? $data['transaction_id'] ?? ''),
                 orderId: $request->getOrderId(),
                 amount: $request->getAmount(),
                 rawResponse: $data,
@@ -106,8 +106,8 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
         }
 
         return PaymentResponse::failed(
-            errorCode: (string) ($data['Sonuc_Str'] ?? $data['error_code'] ?? 'UNKNOWN'),
-            errorMessage: $data['Sonuc_Ack'] ?? $data['error_message'] ?? 'ParamPos ödeme başarısız.',
+            errorCode: $this->toString($data['Sonuc_Str'] ?? $data['error_code'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($data['Sonuc_Ack'] ?? $data['error_message'] ?? null, 'ParamPos ödeme başarısız.'),
             rawResponse: $data,
         );
     }
@@ -137,15 +137,15 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
 
         if (($data['Sonuc'] ?? '') === '1') {
             return RefundResponse::successful(
-                transactionId: $data['Dekont_ID'] ?? $request->getTransactionId(),
+                transactionId: $this->toString($data['Dekont_ID'] ?? null, $request->getTransactionId()),
                 refundedAmount: $request->getAmount(),
                 rawResponse: $data,
             );
         }
 
         return RefundResponse::failed(
-            errorCode: (string) ($data['Sonuc_Str'] ?? 'UNKNOWN'),
-            errorMessage: $data['Sonuc_Ack'] ?? 'ParamPos iade başarısız.',
+            errorCode: $this->toString($data['Sonuc_Str'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($data['Sonuc_Ack'] ?? null, 'ParamPos iade başarısız.'),
             rawResponse: $data,
         );
     }
@@ -169,17 +169,17 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
 
         if (($data['Sonuc'] ?? '') === '1') {
             return QueryResponse::successful(
-                transactionId: $data['Dekont_ID'] ?? '',
-                orderId: $data['Siparis_ID'] ?? '',
-                amount: (float) ($data['Tutar'] ?? 0),
+                transactionId: $this->toString($data['Dekont_ID'] ?? ''),
+                orderId: $this->toString($data['Siparis_ID'] ?? ''),
+                amount: $this->toFloat($data['Tutar'] ?? 0),
                 status: PaymentStatus::Successful,
                 rawResponse: $data,
             );
         }
 
         return QueryResponse::failed(
-            errorCode: (string) ($data['Sonuc_Str'] ?? 'UNKNOWN'),
-            errorMessage: $data['Sonuc_Ack'] ?? 'ParamPos sorgu başarısız.',
+            errorCode: $this->toString($data['Sonuc_Str'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($data['Sonuc_Ack'] ?? null, 'ParamPos sorgu başarısız.'),
             rawResponse: $data,
         );
     }
@@ -217,16 +217,16 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
         $data = $response->toArray();
 
         if (isset($data['UCD_HTML'])) {
-            return SecureInitResponse::html($data['UCD_HTML'], $data);
+            return SecureInitResponse::html($this->toString($data['UCD_HTML']), $data);
         }
 
         if (isset($data['redirect_url'])) {
-            return SecureInitResponse::redirect($data['redirect_url'], [], $data);
+            return SecureInitResponse::redirect($this->toString($data['redirect_url']), [], $data);
         }
 
         return SecureInitResponse::failed(
-            errorCode: (string) ($data['Sonuc_Str'] ?? 'UNKNOWN'),
-            errorMessage: $data['Sonuc_Ack'] ?? 'ParamPos 3D Secure başlatma başarısız.',
+            errorCode: $this->toString($data['Sonuc_Str'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($data['Sonuc_Ack'] ?? null, 'ParamPos 3D Secure başlatma başarısız.'),
             rawResponse: $data,
         );
     }
@@ -237,16 +237,16 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
 
         if ('1' === $sonuc || 1 === $sonuc) {
             return PaymentResponse::successful(
-                transactionId: (string) $data->get('Dekont_ID', $data->get('transaction_id', '')),
-                orderId: (string) $data->get('Siparis_ID', $data->get('order_id', '')),
-                amount: (float) $data->get('Tutar', $data->get('amount', 0)),
+                transactionId: $this->toString($data->get('Dekont_ID', $data->get('transaction_id', ''))),
+                orderId: $this->toString($data->get('Siparis_ID', $data->get('order_id', ''))),
+                amount: $this->toFloat($data->get('Tutar', $data->get('amount', 0))),
                 rawResponse: $data->toArray(),
             );
         }
 
         return PaymentResponse::failed(
-            errorCode: (string) $data->get('Sonuc_Str', $data->get('error_code', 'UNKNOWN')),
-            errorMessage: (string) $data->get('Sonuc_Ack', $data->get('error_message', 'ParamPos 3D Secure ödeme başarısız.')),
+            errorCode: $this->toString($data->get('Sonuc_Str', $data->get('error_code', 'UNKNOWN'))),
+            errorMessage: $this->toString($data->get('Sonuc_Ack', $data->get('error_message', 'ParamPos 3D Secure ödeme başarısız.'))),
             rawResponse: $data->toArray(),
         );
     }
@@ -281,14 +281,14 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
 
         if (($data['Sonuc'] ?? '') === '1') {
             return SubscriptionResponse::successful(
-                subscriptionId: $data['subscription_id'] ?? '',
+                subscriptionId: $this->toString($data['subscription_id'] ?? ''),
                 rawResponse: $data,
             );
         }
 
         return SubscriptionResponse::failed(
-            errorCode: (string) ($data['Sonuc_Str'] ?? 'UNKNOWN'),
-            errorMessage: $data['Sonuc_Ack'] ?? 'ParamPos abonelik oluşturma başarısız.',
+            errorCode: $this->toString($data['Sonuc_Str'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($data['Sonuc_Ack'] ?? null, 'ParamPos abonelik oluşturma başarısız.'),
             rawResponse: $data,
         );
     }
@@ -315,8 +315,8 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
         }
 
         return SubscriptionResponse::failed(
-            errorCode: (string) ($data['Sonuc_Str'] ?? 'UNKNOWN'),
-            errorMessage: $data['Sonuc_Ack'] ?? 'ParamPos abonelik iptali başarısız.',
+            errorCode: $this->toString($data['Sonuc_Str'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($data['Sonuc_Ack'] ?? null, 'ParamPos abonelik iptali başarısız.'),
             rawResponse: $data,
         );
     }
@@ -340,15 +340,21 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
         $data = $response->toArray();
 
         $installments = [];
-        foreach ($data['installments'] ?? [] as $inst) {
-            $count = (int) ($inst['count'] ?? 0);
-            if ($count > 0) {
-                $installments[] = InstallmentInfo::create(
-                    count: $count,
-                    perInstallment: (float) ($inst['per_amount'] ?? 0),
-                    total: (float) ($inst['total_amount'] ?? 0),
-                    interestRate: (float) ($inst['interest_rate'] ?? 0),
-                );
+        $rawInstallments = $data['installments'] ?? [];
+        if (is_array($rawInstallments)) {
+            foreach ($rawInstallments as $inst) {
+                if (!is_array($inst)) {
+                    continue;
+                }
+                $count = $this->toInt($inst['count'] ?? 0);
+                if ($count > 0) {
+                    $installments[] = InstallmentInfo::create(
+                        count: $count,
+                        perInstallment: $this->toFloat($inst['per_amount'] ?? 0),
+                        total: $this->toFloat($inst['total_amount'] ?? 0),
+                        interestRate: $this->toFloat($inst['interest_rate'] ?? 0),
+                    );
+                }
             }
         }
 
@@ -382,5 +388,20 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
             'GBP' => '3',
             default => '1008',
         };
+    }
+
+    private function toString(mixed $value, string $default = ''): string
+    {
+        return is_string($value) ? $value : $default;
+    }
+
+    private function toFloat(mixed $value, float $default = 0.0): float
+    {
+        return is_numeric($value) ? (float) $value : $default;
+    }
+
+    private function toInt(mixed $value, int $default = 0): int
+    {
+        return is_numeric($value) ? (int) $value : $default;
     }
 }

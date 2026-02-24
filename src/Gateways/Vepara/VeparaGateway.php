@@ -101,7 +101,7 @@ class VeparaGateway extends AbstractGateway implements PayableInterface, Refunda
 
         if (($data['status_code'] ?? 0) === 100) {
             return PaymentResponse::successful(
-                transactionId: $data['transaction_id'] ?? '',
+                transactionId: $this->toString($data['transaction_id'] ?? ''),
                 orderId: $request->getOrderId(),
                 amount: $request->getAmount(),
                 rawResponse: $data,
@@ -109,8 +109,8 @@ class VeparaGateway extends AbstractGateway implements PayableInterface, Refunda
         }
 
         return PaymentResponse::failed(
-            errorCode: (string) ($data['status_code'] ?? 'UNKNOWN'),
-            errorMessage: $data['status_description'] ?? 'Vepara ödeme başarısız.',
+            errorCode: $this->toString($data['status_code'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['status_description'] ?? 'Vepara ödeme başarısız.'),
             rawResponse: $data,
         );
     }
@@ -139,15 +139,15 @@ class VeparaGateway extends AbstractGateway implements PayableInterface, Refunda
 
         if (($data['status_code'] ?? 0) === 100) {
             return RefundResponse::successful(
-                transactionId: $data['transaction_id'] ?? $request->getTransactionId(),
+                transactionId: $this->toString($data['transaction_id'] ?? $request->getTransactionId()),
                 refundedAmount: $request->getAmount(),
                 rawResponse: $data,
             );
         }
 
         return RefundResponse::failed(
-            errorCode: (string) ($data['status_code'] ?? 'UNKNOWN'),
-            errorMessage: $data['status_description'] ?? 'Vepara iade başarısız.',
+            errorCode: $this->toString($data['status_code'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['status_description'] ?? 'Vepara iade başarısız.'),
             rawResponse: $data,
         );
     }
@@ -170,17 +170,17 @@ class VeparaGateway extends AbstractGateway implements PayableInterface, Refunda
 
         if (($data['status_code'] ?? 0) === 100) {
             return QueryResponse::successful(
-                transactionId: $data['transaction_id'] ?? '',
-                orderId: $data['order_id'] ?? '',
-                amount: (float) ($data['amount'] ?? 0),
+                transactionId: $this->toString($data['transaction_id'] ?? ''),
+                orderId: $this->toString($data['order_id'] ?? ''),
+                amount: $this->toFloat($data['amount'] ?? 0),
                 status: PaymentStatus::Successful,
                 rawResponse: $data,
             );
         }
 
         return QueryResponse::failed(
-            errorCode: (string) ($data['status_code'] ?? 'UNKNOWN'),
-            errorMessage: $data['status_description'] ?? 'Vepara sorgu başarısız.',
+            errorCode: $this->toString($data['status_code'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['status_description'] ?? 'Vepara sorgu başarısız.'),
             rawResponse: $data,
         );
     }
@@ -217,19 +217,19 @@ class VeparaGateway extends AbstractGateway implements PayableInterface, Refunda
 
         if (($data['status_code'] ?? 0) === 100 && isset($data['redirect_url'])) {
             return SecureInitResponse::redirect(
-                $data['redirect_url'],
-                $data['form_data'] ?? [],
+                $this->toString($data['redirect_url']),
+                is_array($data['form_data'] ?? null) ? $data['form_data'] : [],
                 $data,
             );
         }
 
         if (isset($data['html_content'])) {
-            return SecureInitResponse::html($data['html_content'], $data);
+            return SecureInitResponse::html($this->toString($data['html_content']), $data);
         }
 
         return SecureInitResponse::failed(
-            errorCode: (string) ($data['status_code'] ?? 'UNKNOWN'),
-            errorMessage: $data['status_description'] ?? 'Vepara 3D Secure başlatma başarısız.',
+            errorCode: $this->toString($data['status_code'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['status_description'] ?? 'Vepara 3D Secure başlatma başarısız.'),
             rawResponse: $data,
         );
     }
@@ -237,21 +237,21 @@ class VeparaGateway extends AbstractGateway implements PayableInterface, Refunda
     public function completeSecurePayment(SecureCallbackData $data): PaymentResponse
     {
         $status = $data->get('status', '');
-        $transactionId = (string) $data->get('transaction_id', '');
-        $orderId = (string) $data->get('order_id', '');
+        $transactionId = $this->toString($data->get('transaction_id', ''));
+        $orderId = $this->toString($data->get('order_id', ''));
 
         if ('success' === $status || '1' === $status) {
             return PaymentResponse::successful(
                 transactionId: $transactionId,
                 orderId: $orderId,
-                amount: (float) $data->get('amount', 0),
+                amount: $this->toFloat($data->get('amount', 0)),
                 rawResponse: $data->toArray(),
             );
         }
 
         return PaymentResponse::failed(
-            errorCode: (string) ($data->get('error_code', 'UNKNOWN')),
-            errorMessage: (string) $data->get('error_message', 'Vepara 3D Secure ödeme başarısız.'),
+            errorCode: $this->toString($data->get('error_code', 'UNKNOWN')),
+            errorMessage: $this->toString($data->get('error_message', 'Vepara 3D Secure ödeme başarısız.')),
             rawResponse: $data->toArray(),
         );
     }
@@ -275,15 +275,21 @@ class VeparaGateway extends AbstractGateway implements PayableInterface, Refunda
 
         $installments = [];
 
-        foreach ($data['installments'] ?? [] as $inst) {
-            $count = (int) ($inst['count'] ?? 0);
-            if ($count > 0) {
-                $installments[] = InstallmentInfo::create(
-                    count: $count,
-                    perInstallment: (float) ($inst['per_amount'] ?? 0),
-                    total: (float) ($inst['total_amount'] ?? 0),
-                    interestRate: (float) ($inst['interest_rate'] ?? 0),
-                );
+        $installmentList = $data['installments'] ?? [];
+        if (is_array($installmentList)) {
+            foreach ($installmentList as $inst) {
+                if (!is_array($inst)) {
+                    continue;
+                }
+                $count = $this->toInt($inst['count'] ?? 0);
+                if ($count > 0) {
+                    $installments[] = InstallmentInfo::create(
+                        count: $count,
+                        perInstallment: $this->toFloat($inst['per_amount'] ?? 0),
+                        total: $this->toFloat($inst['total_amount'] ?? 0),
+                        interestRate: $this->toFloat($inst['interest_rate'] ?? 0),
+                    );
+                }
             }
         }
 
@@ -305,6 +311,21 @@ class VeparaGateway extends AbstractGateway implements PayableInterface, Refunda
         return self::SANDBOX_BASE_URL;
     }
 
+    private function toString(mixed $value, string $default = ''): string
+    {
+        return is_string($value) ? $value : $default;
+    }
+
+    private function toFloat(mixed $value, float $default = 0.0): float
+    {
+        return is_numeric($value) ? (float) $value : $default;
+    }
+
+    private function toInt(mixed $value, int $default = 0): int
+    {
+        return is_numeric($value) ? (int) $value : $default;
+    }
+
     /**
      * API istekleri için gerekli header'ları oluşturur.
      *
@@ -315,7 +336,7 @@ class VeparaGateway extends AbstractGateway implements PayableInterface, Refunda
     private function buildHeaders(array $body): array
     {
         $bodyStr = json_encode($body, JSON_THROW_ON_ERROR);
-        $hash = HashGenerator::hmacSha256($bodyStr, $this->config->get('secret_key'));
+        $hash = HashGenerator::hmacSha256($bodyStr, $this->toString($this->config->get('secret_key')));
 
         return [
             'Content-Type' => 'application/json',

@@ -80,16 +80,16 @@ class IparaGateway extends AbstractGateway implements PayableInterface, Refundab
 
         if (($data['result'] ?? '') === '1') {
             return PaymentResponse::successful(
-                transactionId: $data['transactionId'] ?? '',
-                orderId: $data['orderId'] ?? $request->getOrderId(),
+                transactionId: $this->toString($data['transactionId'] ?? null),
+                orderId: $this->toString($data['orderId'] ?? null, $request->getOrderId()),
                 amount: $request->getAmount(),
                 rawResponse: $data,
             );
         }
 
         return PaymentResponse::failed(
-            errorCode: $data['errorCode'] ?? 'UNKNOWN',
-            errorMessage: $data['errorMessage'] ?? 'iPara ödeme başarısız.',
+            errorCode: $this->toString($data['errorCode'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($data['errorMessage'] ?? null, 'iPara ödeme başarısız.'),
             rawResponse: $data,
         );
     }
@@ -119,15 +119,15 @@ class IparaGateway extends AbstractGateway implements PayableInterface, Refundab
 
         if (($data['result'] ?? '') === '1') {
             return RefundResponse::successful(
-                transactionId: $data['transactionId'] ?? $request->getTransactionId(),
+                transactionId: $this->toString($data['transactionId'] ?? null, $request->getTransactionId()),
                 refundedAmount: $request->getAmount(),
                 rawResponse: $data,
             );
         }
 
         return RefundResponse::failed(
-            errorCode: $data['errorCode'] ?? 'UNKNOWN',
-            errorMessage: $data['errorMessage'] ?? 'iPara iade başarısız.',
+            errorCode: $this->toString($data['errorCode'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($data['errorMessage'] ?? null, 'iPara iade başarısız.'),
             rawResponse: $data,
         );
     }
@@ -158,17 +158,17 @@ class IparaGateway extends AbstractGateway implements PayableInterface, Refundab
             };
 
             return QueryResponse::successful(
-                transactionId: $data['transactionId'] ?? '',
-                orderId: $data['orderId'] ?? '',
-                amount: (float) ($data['amount'] ?? 0),
+                transactionId: $this->toString($data['transactionId'] ?? null),
+                orderId: $this->toString($data['orderId'] ?? null),
+                amount: $this->toFloat($data['amount'] ?? null),
                 status: $status,
                 rawResponse: $data,
             );
         }
 
         return QueryResponse::failed(
-            errorCode: $data['errorCode'] ?? 'UNKNOWN',
-            errorMessage: $data['errorMessage'] ?? 'iPara sorgu başarısız.',
+            errorCode: $this->toString($data['errorCode'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($data['errorMessage'] ?? null, 'iPara sorgu başarısız.'),
             rawResponse: $data,
         );
     }
@@ -195,18 +195,19 @@ class IparaGateway extends AbstractGateway implements PayableInterface, Refundab
         $data = $response->toArray();
 
         if (isset($data['threeDSecureHtml'])) {
-            $html = base64_decode($data['threeDSecureHtml'], true);
+            $decoded = base64_decode($this->toString($data['threeDSecureHtml']), true);
+            $html = false !== $decoded ? $decoded : '';
 
             return SecureInitResponse::html($html, $data);
         }
 
         if (isset($data['redirectUrl'])) {
-            return SecureInitResponse::redirect($data['redirectUrl'], [], $data);
+            return SecureInitResponse::redirect($this->toString($data['redirectUrl']), [], $data);
         }
 
         return SecureInitResponse::failed(
-            errorCode: $data['errorCode'] ?? 'UNKNOWN',
-            errorMessage: $data['errorMessage'] ?? 'iPara 3D Secure başlatma başarısız.',
+            errorCode: $this->toString($data['errorCode'] ?? null, 'UNKNOWN'),
+            errorMessage: $this->toString($data['errorMessage'] ?? null, 'iPara 3D Secure başlatma başarısız.'),
             rawResponse: $data,
         );
     }
@@ -235,23 +236,23 @@ class IparaGateway extends AbstractGateway implements PayableInterface, Refundab
 
             if (($responseData['result'] ?? '') === '1') {
                 return PaymentResponse::successful(
-                    transactionId: $responseData['transactionId'] ?? '',
-                    orderId: $responseData['orderId'] ?? $data->get('orderId', ''),
-                    amount: (float) ($responseData['amount'] ?? 0),
+                    transactionId: $this->toString($responseData['transactionId'] ?? null),
+                    orderId: $this->toString($responseData['orderId'] ?? $data->get('orderId', '')),
+                    amount: $this->toFloat($responseData['amount'] ?? null),
                     rawResponse: $responseData,
                 );
             }
 
             return PaymentResponse::failed(
-                errorCode: $responseData['errorCode'] ?? 'UNKNOWN',
-                errorMessage: $responseData['errorMessage'] ?? 'iPara 3D Secure ödeme tamamlama başarısız.',
+                errorCode: $this->toString($responseData['errorCode'] ?? null, 'UNKNOWN'),
+                errorMessage: $this->toString($responseData['errorMessage'] ?? null, 'iPara 3D Secure ödeme tamamlama başarısız.'),
                 rawResponse: $responseData,
             );
         }
 
         return PaymentResponse::failed(
-            errorCode: (string) $data->get('errorCode', 'UNKNOWN'),
-            errorMessage: (string) $data->get('errorMessage', 'iPara 3D Secure doğrulama başarısız.'),
+            errorCode: $this->toString($data->get('errorCode'), 'UNKNOWN'),
+            errorMessage: $this->toString($data->get('errorMessage'), 'iPara 3D Secure doğrulama başarısız.'),
             rawResponse: $data->toArray(),
         );
     }
@@ -274,14 +275,16 @@ class IparaGateway extends AbstractGateway implements PayableInterface, Refundab
         $data = $response->toArray();
 
         $installments = [];
-        foreach ($data['installmentDetails'] ?? [] as $inst) {
-            $count = (int) ($inst['installmentCount'] ?? 0);
+        $installmentDetails = is_array($data['installmentDetails'] ?? null) ? $data['installmentDetails'] : [];
+        foreach ($installmentDetails as $inst) {
+            assert(is_array($inst));
+            $count = $this->toInt($inst['installmentCount'] ?? null);
             if ($count > 0) {
                 $installments[] = InstallmentInfo::create(
                     count: $count,
-                    perInstallment: (float) ($inst['installmentAmount'] ?? 0),
-                    total: (float) ($inst['totalAmount'] ?? 0),
-                    interestRate: (float) ($inst['interestRate'] ?? 0),
+                    perInstallment: $this->toFloat($inst['installmentAmount'] ?? null),
+                    total: $this->toFloat($inst['totalAmount'] ?? null),
+                    interestRate: $this->toFloat($inst['interestRate'] ?? null),
                 );
             }
         }
@@ -306,6 +309,8 @@ class IparaGateway extends AbstractGateway implements PayableInterface, Refundab
 
     /**
      * iPara API istekleri için kimlik doğrulama başlıklarını oluşturur.
+     *
+     * @return array<string, string>
      */
     private function buildAuthHeaders(string $endpoint, string $body = ''): array
     {
@@ -327,10 +332,13 @@ class IparaGateway extends AbstractGateway implements PayableInterface, Refundab
 
     /**
      * Ödeme isteği için temel gövde parametrelerini oluşturur.
+     *
+     * @return array<string, mixed>
      */
     private function buildPaymentBody(PaymentRequest $request): array
     {
         $card = $request->getCard();
+        assert(null !== $card);
         $customer = $request->getCustomer();
         $billingAddress = $request->getBillingAddress();
 
@@ -380,5 +388,20 @@ class IparaGateway extends AbstractGateway implements PayableInterface, Refundab
         }
 
         return $body;
+    }
+
+    private function toString(mixed $value, string $default = ''): string
+    {
+        return is_string($value) ? $value : $default;
+    }
+
+    private function toFloat(mixed $value, float $default = 0.0): float
+    {
+        return is_numeric($value) ? (float) $value : $default;
+    }
+
+    private function toInt(mixed $value, int $default = 0): int
+    {
+        return is_numeric($value) ? (int) $value : $default;
     }
 }

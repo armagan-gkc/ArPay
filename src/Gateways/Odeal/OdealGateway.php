@@ -102,16 +102,16 @@ class OdealGateway extends AbstractGateway implements PayableInterface, Refundab
 
         if (($data['status'] ?? '') === 'success') {
             return PaymentResponse::successful(
-                transactionId: $data['transactionId'] ?? '',
-                orderId: $data['orderId'] ?? $request->getOrderId(),
+                transactionId: $this->toString($data['transactionId'] ?? ''),
+                orderId: $this->toString($data['orderId'] ?? $request->getOrderId()),
                 amount: $request->getAmount(),
                 rawResponse: $data,
             );
         }
 
         return PaymentResponse::failed(
-            errorCode: $data['errorCode'] ?? 'UNKNOWN',
-            errorMessage: $data['errorMessage'] ?? 'Ödeal ödeme başarısız.',
+            errorCode: $this->toString($data['errorCode'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['errorMessage'] ?? 'Ödeal ödeme başarısız.'),
             rawResponse: $data,
         );
     }
@@ -143,15 +143,15 @@ class OdealGateway extends AbstractGateway implements PayableInterface, Refundab
 
         if (($data['status'] ?? '') === 'success') {
             return RefundResponse::successful(
-                transactionId: $data['transactionId'] ?? $request->getTransactionId(),
+                transactionId: $this->toString($data['transactionId'] ?? $request->getTransactionId()),
                 refundedAmount: $request->getAmount(),
                 rawResponse: $data,
             );
         }
 
         return RefundResponse::failed(
-            errorCode: $data['errorCode'] ?? 'UNKNOWN',
-            errorMessage: $data['errorMessage'] ?? 'Ödeal iade başarısız.',
+            errorCode: $this->toString($data['errorCode'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['errorMessage'] ?? 'Ödeal iade başarısız.'),
             rawResponse: $data,
         );
     }
@@ -181,17 +181,17 @@ class OdealGateway extends AbstractGateway implements PayableInterface, Refundab
             };
 
             return QueryResponse::successful(
-                transactionId: $data['transactionId'] ?? '',
-                orderId: $data['orderId'] ?? '',
-                amount: (float) ($data['amount'] ?? 0),
+                transactionId: $this->toString($data['transactionId'] ?? ''),
+                orderId: $this->toString($data['orderId'] ?? ''),
+                amount: $this->toFloat($data['amount'] ?? 0),
                 status: $paymentStatus,
                 rawResponse: $data,
             );
         }
 
         return QueryResponse::failed(
-            errorCode: $data['errorCode'] ?? 'UNKNOWN',
-            errorMessage: $data['errorMessage'] ?? 'Ödeal sorgu başarısız.',
+            errorCode: $this->toString($data['errorCode'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['errorMessage'] ?? 'Ödeal sorgu başarısız.'),
             rawResponse: $data,
         );
     }
@@ -241,19 +241,22 @@ class OdealGateway extends AbstractGateway implements PayableInterface, Refundab
         $data = $response->toArray();
 
         if (isset($data['threeDSecureHtml'])) {
+            $decoded = base64_decode($this->toString($data['threeDSecureHtml']), true);
+            $html = false !== $decoded ? $decoded : '';
+
             return SecureInitResponse::html(
-                base64_decode($data['threeDSecureHtml'], true),
+                $html,
                 $data,
             );
         }
 
         if (isset($data['redirectUrl'])) {
-            return SecureInitResponse::redirect($data['redirectUrl'], [], $data);
+            return SecureInitResponse::redirect($this->toString($data['redirectUrl']), [], $data);
         }
 
         return SecureInitResponse::failed(
-            errorCode: $data['errorCode'] ?? 'UNKNOWN',
-            errorMessage: $data['errorMessage'] ?? 'Ödeal 3D Secure başlatma başarısız.',
+            errorCode: $this->toString($data['errorCode'] ?? 'UNKNOWN'),
+            errorMessage: $this->toString($data['errorMessage'] ?? 'Ödeal 3D Secure başlatma başarısız.'),
             rawResponse: $data,
         );
     }
@@ -277,23 +280,23 @@ class OdealGateway extends AbstractGateway implements PayableInterface, Refundab
 
             if (($responseData['status'] ?? '') === 'success') {
                 return PaymentResponse::successful(
-                    transactionId: $responseData['transactionId'] ?? '',
-                    orderId: $responseData['orderId'] ?? $data->get('orderId', ''),
-                    amount: (float) ($responseData['amount'] ?? 0),
+                    transactionId: $this->toString($responseData['transactionId'] ?? ''),
+                    orderId: $this->toString($responseData['orderId'] ?? $data->get('orderId', '')),
+                    amount: $this->toFloat($responseData['amount'] ?? 0),
                     rawResponse: $responseData,
                 );
             }
 
             return PaymentResponse::failed(
-                errorCode: $responseData['errorCode'] ?? 'UNKNOWN',
-                errorMessage: $responseData['errorMessage'] ?? 'Ödeal 3D Secure ödeme tamamlama başarısız.',
+                errorCode: $this->toString($responseData['errorCode'] ?? 'UNKNOWN'),
+                errorMessage: $this->toString($responseData['errorMessage'] ?? 'Ödeal 3D Secure ödeme tamamlama başarısız.'),
                 rawResponse: $responseData,
             );
         }
 
         return PaymentResponse::failed(
-            errorCode: (string) $data->get('errorCode', 'UNKNOWN'),
-            errorMessage: (string) $data->get('errorMessage', 'Ödeal 3D Secure doğrulama başarısız.'),
+            errorCode: $this->toString($data->get('errorCode', 'UNKNOWN')),
+            errorMessage: $this->toString($data->get('errorMessage', 'Ödeal 3D Secure doğrulama başarısız.')),
             rawResponse: $data->toArray(),
         );
     }
@@ -315,23 +318,45 @@ class OdealGateway extends AbstractGateway implements PayableInterface, Refundab
 
     /**
      * Ödeal API istekleri için standart başlıkları oluşturur.
+     *
+     * @return array<string, string>
      */
     private function buildHeaders(): array
     {
+        $apiKey = $this->toString($this->config->get('api_key'));
+
         return [
             'Content-Type' => 'application/json',
-            'Authorization' => 'Bearer ' . $this->config->get('api_key'),
-            'X-Api-Key' => $this->config->get('api_key'),
+            'Authorization' => 'Bearer ' . $apiKey,
+            'X-Api-Key' => $apiKey,
         ];
     }
 
     /**
      * Ödeal imza doğrulaması için hash oluşturur.
+     *
+     * @param array<int, string> $params
      */
     private function generateSignature(array $params): string
     {
         $hashString = implode('', $params) . $this->config->get('secret_key');
 
         return HashGenerator::sha256($hashString);
+    }
+
+    private function toString(mixed $value, string $default = ''): string
+    {
+        return is_string($value) ? $value : (is_numeric($value) ? (string) $value : $default);
+    }
+
+    private function toFloat(mixed $value, float $default = 0.0): float
+    {
+        return is_numeric($value) ? (float) $value : $default;
+    }
+
+    /** @phpstan-ignore method.unused */
+    private function toInt(mixed $value, int $default = 0): int
+    {
+        return is_numeric($value) ? (int) $value : $default;
     }
 }

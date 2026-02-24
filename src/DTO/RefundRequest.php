@@ -10,6 +10,8 @@ namespace Arpay\DTO;
  * Tam veya kısmi iade için gerekli bilgileri tutar.
  *
  * @author Armağan Gökce
+ *
+ * @phpstan-consistent-constructor
  */
 class RefundRequest
 {
@@ -23,7 +25,7 @@ class RefundRequest
 
     public static function create(): static
     {
-        return new static();
+        return new static(); // @phpstan-ignore new.static
     }
 
     /**

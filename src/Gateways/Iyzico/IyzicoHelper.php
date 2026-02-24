@@ -68,7 +68,8 @@ class IyzicoHelper
                     $value,
                 )) . ']';
             } else {
-                $parts[] = "{$key}={$value}";
+                $stringValue = is_scalar($value) ? (string) $value : '';
+                $parts[] = "{$key}={$stringValue}";
             }
         }
 

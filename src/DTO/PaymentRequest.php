@@ -27,6 +27,8 @@ use Arpay\Enums\Currency;
  * ```
  *
  * @author Armağan Gökce
+ *
+ * @phpstan-consistent-constructor
  */
 class PaymentRequest
 {
@@ -68,7 +70,7 @@ class PaymentRequest
      */
     public static function create(): static
     {
-        return new static();
+        return new static(); // @phpstan-ignore new.static
     }
 
     /**

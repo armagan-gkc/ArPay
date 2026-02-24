@@ -38,7 +38,7 @@ class PayTRHelper
             $params['user_ip'] ?? '',
             $params['merchant_oid'] ?? '',
             $params['email'] ?? '',
-            (string) ($params['payment_amount'] ?? ''),
+            self::ensureString($params['payment_amount'] ?? ''),
             $params['user_basket'] ?? '',
             $params['no_installment'] ?? '0',
             $params['max_installment'] ?? '0',
@@ -69,7 +69,7 @@ class PayTRHelper
             $config->get('merchant_salt'),
         ]);
 
-        return HashGenerator::hmacSha256Base64($hashStr, $config->get('merchant_key'));
+        return HashGenerator::hmacSha256Base64($hashStr, self::ensureString($config->get('merchant_key')));
     }
 
     /**
@@ -140,5 +140,20 @@ class PayTRHelper
         $calculatedHash = HashGenerator::hmacSha256Base64($hashStr, $merchantKey);
 
         return hash_equals($calculatedHash, $expectedHash);
+    }
+
+    /**
+     * Safely converts a mixed value to string.
+     */
+    private static function ensureString(mixed $value): string
+    {
+        if (is_string($value)) {
+            return $value;
+        }
+        if (is_int($value) || is_float($value)) {
+            return (string) $value;
+        }
+
+        return '';
     }
 }

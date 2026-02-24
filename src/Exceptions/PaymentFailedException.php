@@ -21,7 +21,7 @@ class PaymentFailedException extends ArpayException
     /**
      * @param string $errorCode Gateway hata kodu
      * @param string $errorMessage Hata mesajı
-     * @param array $rawResponse Gateway'den gelen ham yanıt
+     * @param array<string, mixed> $rawResponse Gateway'den gelen ham yanıt
      */
     public function __construct(
         protected string $errorCode = '',

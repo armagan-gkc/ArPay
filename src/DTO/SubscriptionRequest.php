@@ -10,6 +10,8 @@ namespace Arpay\DTO;
  * Tekrarlayan ödeme planı oluşturmak için gerekli bilgileri tutar.
  *
  * @author Armağan Gökce
+ *
+ * @phpstan-consistent-constructor
  */
 class SubscriptionRequest
 {
@@ -26,7 +28,7 @@ class SubscriptionRequest
 
     public static function create(): static
     {
-        return new static();
+        return new static(); // @phpstan-ignore new.static
     }
 
     /**

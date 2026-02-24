@@ -24,7 +24,7 @@ class PaymentResponse implements \JsonSerializable
      * @param PaymentStatus $status Ödeme durumu
      * @param string $errorCode Hata kodu (başarısızsa)
      * @param string $errorMessage Hata mesajı (başarısızsa)
-     * @param array $rawResponse Gateway'den gelen ham yanıt
+     * @param array<string, mixed> $rawResponse Gateway'den gelen ham yanıt
      */
     public function __construct(
         protected readonly bool $successful,
@@ -39,6 +39,9 @@ class PaymentResponse implements \JsonSerializable
 
     /**
      * Başarılı ödeme yanıtı oluşturur.
+     */
+    /**
+     * @param array<string, mixed> $rawResponse
      */
     public static function successful(
         string $transactionId,
@@ -58,6 +61,9 @@ class PaymentResponse implements \JsonSerializable
 
     /**
      * Başarısız ödeme yanıtı oluşturur.
+     */
+    /**
+     * @param array<string, mixed> $rawResponse
      */
     public static function failed(
         string $errorCode = '',

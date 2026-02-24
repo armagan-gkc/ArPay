@@ -13,6 +13,9 @@ namespace Arpay\DTO;
  */
 class SubscriptionResponse implements \JsonSerializable
 {
+    /**
+     * @param array<string, mixed> $rawResponse
+     */
     public function __construct(
         protected readonly bool $successful,
         protected readonly string $subscriptionId = '',
@@ -24,6 +27,9 @@ class SubscriptionResponse implements \JsonSerializable
 
     /**
      * Başarılı abonelik yanıtı oluşturur.
+     */
+    /**
+     * @param array<string, mixed> $rawResponse
      */
     public static function successful(
         string $subscriptionId,
@@ -40,6 +46,9 @@ class SubscriptionResponse implements \JsonSerializable
 
     /**
      * Başarısız abonelik yanıtı oluşturur.
+     */
+    /**
+     * @param array<string, mixed> $rawResponse
      */
     public static function failed(
         string $errorCode = '',
