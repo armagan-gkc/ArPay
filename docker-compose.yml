@@ -1,0 +1,15 @@
+services:
+  arpay-demo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: arpay-demo
+    ports:
+      - "8043:80"
+    volumes:
+      - ./demo:/var/www/html/demo
+      - ./src:/var/www/html/src
+      - ./tests:/var/www/html/tests
+    environment:
+      - APP_ENV=demo
+    restart: unless-stopped
