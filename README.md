@@ -1,6 +1,6 @@
 <p align="center">
   <img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP 8.2+">
-  <img src="https://img.shields.io/badge/PHPStan-Level%208-4FC08D?style=for-the-badge" alt="PHPStan Level 8">
+  <img src="https://img.shields.io/badge/PHPStan-Level%209%20(Max)-4FC08D?style=for-the-badge" alt="PHPStan Level 9">
   <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License">
   <img src="https://img.shields.io/badge/Gateways-9-orange?style=for-the-badge" alt="9 Gateways">
   <img src="https://img.shields.io/github/actions/workflow/status/armagan-gkc/arpay/ci.yml?style=for-the-badge&label=CI" alt="CI Status">
@@ -52,7 +52,7 @@ $response = $gateway->pay($request); // Aynı $request, aynı API!
 | 📊 **Taksit Sorgulama** | BIN bazlı taksit oranları |
 | 🧪 **Test Modu** | Sandbox ortamında güvenli geliştirme |
 | 🐳 **Docker Demo** | Anında çalışan interaktif demo |
-| 🛡️ **PHPStan Level 8** | Maksimum statik analiz güvencesi |
+| 🛡️ **PHPStan Level 9 (Max)** | Maksimum statik analiz güvencesi |
 
 ---
 
