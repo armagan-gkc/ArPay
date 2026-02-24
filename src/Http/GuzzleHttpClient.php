@@ -27,9 +27,9 @@ class GuzzleHttpClient implements HttpClientInterface
     protected Client $client;
 
     /**
-     * @param int   $timeout       İstek zaman aşımı süresi (saniye)
-     * @param int   $connectTimeout Bağlantı zaman aşımı süresi (saniye)
-     * @param bool  $verify        SSL sertifika doğrulaması
+     * @param int $timeout İstek zaman aşımı süresi (saniye)
+     * @param int $connectTimeout Bağlantı zaman aşımı süresi (saniye)
+     * @param bool $verify SSL sertifika doğrulaması
      */
     public function __construct(
         int $timeout = 30,
@@ -37,16 +37,14 @@ class GuzzleHttpClient implements HttpClientInterface
         bool $verify = true,
     ) {
         $this->client = new Client([
-            'timeout'         => $timeout,
+            'timeout' => $timeout,
             'connect_timeout' => $connectTimeout,
-            'verify'          => $verify,
-            'http_errors'     => false, /* HTTP hatalarında exception fırlatma, biz yöneteceğiz */
+            'verify' => $verify,
+            'http_errors' => false, // HTTP hatalarında exception fırlatma, biz yöneteceğiz
         ]);
     }
 
     /**
-     * {@inheritdoc}
-     *
      * @throws NetworkException Bağlantı hatası veya zaman aşımı durumunda
      */
     public function post(string $url, array $headers = [], array|string $body = []): HttpResponse
@@ -55,13 +53,13 @@ class GuzzleHttpClient implements HttpClientInterface
             $options = ['headers' => $headers];
 
             if (is_string($body)) {
-                /* Ham JSON string gönderimi */
+                // Ham JSON string gönderimi
                 $options['body'] = $body;
             } elseif ($this->isJsonRequest($headers)) {
-                /* JSON gövde olarak gönder */
+                // JSON gövde olarak gönder
                 $options['json'] = $body;
             } else {
-                /* Form verisi olarak gönder */
+                // Form verisi olarak gönder
                 $options['form_params'] = $body;
             }
 
@@ -94,8 +92,6 @@ class GuzzleHttpClient implements HttpClientInterface
     }
 
     /**
-     * {@inheritdoc}
-     *
      * @throws NetworkException Bağlantı hatası veya zaman aşımı durumunda
      */
     public function get(string $url, array $headers = [], array $query = []): HttpResponse
@@ -103,7 +99,7 @@ class GuzzleHttpClient implements HttpClientInterface
         try {
             $response = $this->client->get($url, [
                 'headers' => $headers,
-                'query'   => $query,
+                'query' => $query,
             ]);
 
             return new HttpResponse(
@@ -134,7 +130,7 @@ class GuzzleHttpClient implements HttpClientInterface
     protected function isJsonRequest(array $headers): bool
     {
         foreach ($headers as $key => $value) {
-            if (strtolower($key) === 'content-type' && str_contains(strtolower($value), 'json')) {
+            if ('content-type' === strtolower($key) && str_contains(strtolower($value), 'json')) {
                 return true;
             }
         }
@@ -146,6 +142,7 @@ class GuzzleHttpClient implements HttpClientInterface
      * Guzzle'ın çok değerli başlıklarını tek değerli formata dönüştürür.
      *
      * @param array<string, string[]> $headers Guzzle başlık formatı
+     *
      * @return array<string, string> Düzleştirilmiş başlıklar
      */
     protected function flattenHeaders(array $headers): array

@@ -15,13 +15,13 @@ namespace Arpay\Exceptions;
 class InvalidParameterException extends ArpayException
 {
     /**
-     * @param string $field   Hatalı alanın adı
+     * @param string $field Hatalı alanın adı
      * @param string $message Opsiyonel detay mesajı
      */
     public function __construct(string $field, string $message = '')
     {
         $msg = "Geçersiz parametre: '{$field}'";
-        if ($message !== '') {
+        if ('' !== $message) {
             $msg .= " — {$message}";
         }
         parent::__construct($msg);

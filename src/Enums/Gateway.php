@@ -56,15 +56,15 @@ enum Gateway: string
     public function displayName(): string
     {
         return match ($this) {
-            self::PayTR    => 'PayTR',
-            self::Iyzico   => 'Iyzico',
-            self::Vepara   => 'Vepara',
+            self::PayTR => 'PayTR',
+            self::Iyzico => 'Iyzico',
+            self::Vepara => 'Vepara',
             self::ParamPos => 'ParamPos',
-            self::Ipara    => 'iPara',
-            self::Odeal    => 'Ödeal',
-            self::Paynet   => 'Paynet',
-            self::PayU     => 'PayU',
-            self::Papara   => 'Papara',
+            self::Ipara => 'iPara',
+            self::Odeal => 'Ödeal',
+            self::Paynet => 'Paynet',
+            self::PayU => 'PayU',
+            self::Papara => 'Papara',
         };
     }
 }

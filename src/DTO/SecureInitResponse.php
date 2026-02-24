@@ -17,13 +17,13 @@ namespace Arpay\DTO;
 class SecureInitResponse implements \JsonSerializable
 {
     /**
-     * @param bool   $redirectRequired Yönlendirme gerekli mi?
-     * @param string $redirectUrl      Yönlendirme URL'si
-     * @param string $htmlForm         Otomatik gönderimli HTML form kodu
-     * @param array  $formData         Form POST parametreleri
-     * @param string $errorCode        Hata kodu (başarısızsa)
-     * @param string $errorMessage     Hata mesajı (başarısızsa)
-     * @param array  $rawResponse      Gateway ham yanıtı
+     * @param bool $redirectRequired Yönlendirme gerekli mi?
+     * @param string $redirectUrl Yönlendirme URL'si
+     * @param string $htmlForm Otomatik gönderimli HTML form kodu
+     * @param array $formData Form POST parametreleri
+     * @param string $errorCode Hata kodu (başarısızsa)
+     * @param string $errorMessage Hata mesajı (başarısızsa)
+     * @param array $rawResponse Gateway ham yanıtı
      */
     public function __construct(
         protected readonly bool $redirectRequired,
@@ -33,22 +33,21 @@ class SecureInitResponse implements \JsonSerializable
         protected readonly string $errorCode = '',
         protected readonly string $errorMessage = '',
         protected readonly array $rawResponse = [],
-    ) {
-    }
+    ) {}
 
     /**
      * Yönlendirme gerektiren başarılı yanıt oluşturur.
      *
      * @param string $redirectUrl Banka yönlendirme URL'si
-     * @param array  $formData    POST form verileri
-     * @param array  $rawResponse Gateway ham yanıtı
+     * @param array $formData POST form verileri
+     * @param array $rawResponse Gateway ham yanıtı
      */
     public static function redirect(
         string $redirectUrl,
         array $formData = [],
         array $rawResponse = [],
     ): self {
-        /* Otomatik gönderimli HTML formu oluştur */
+        // Otomatik gönderimli HTML formu oluştur
         $html = self::buildAutoSubmitForm($redirectUrl, $formData);
 
         return new self(
@@ -162,12 +161,12 @@ class SecureInitResponse implements \JsonSerializable
     {
         return [
             'redirect_required' => $this->redirectRequired,
-            'redirect_url'      => $this->redirectUrl,
-            'html_form'         => $this->htmlForm,
-            'form_data'         => $this->formData,
-            'error_code'        => $this->errorCode,
-            'error_message'     => $this->errorMessage,
-            'raw_response'      => $this->rawResponse,
+            'redirect_url' => $this->redirectUrl,
+            'html_form' => $this->htmlForm,
+            'form_data' => $this->formData,
+            'error_code' => $this->errorCode,
+            'error_message' => $this->errorMessage,
+            'raw_response' => $this->rawResponse,
         ];
     }
 
@@ -187,8 +186,9 @@ class SecureInitResponse implements \JsonSerializable
      * JavaScript ile form otomatik olarak submit edilir.
      * Müşteri bir süre "Yönlendiriliyor..." mesajı görür.
      *
-     * @param string               $url      Form action URL
+     * @param string $url Form action URL
      * @param array<string, mixed> $formData POST alanları
+     *
      * @return string HTML form kodu
      */
     protected static function buildAutoSubmitForm(string $url, array $formData): string

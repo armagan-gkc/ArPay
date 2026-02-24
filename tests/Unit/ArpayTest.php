@@ -7,25 +7,29 @@ namespace Arpay\Tests\Unit;
 use Arpay\Arpay;
 use Arpay\ArpayFactory;
 use Arpay\Contracts\GatewayInterface;
+use Arpay\Contracts\InstallmentQueryableInterface;
 use Arpay\Contracts\PayableInterface;
 use Arpay\Contracts\RefundableInterface;
 use Arpay\Contracts\SecurePayableInterface;
 use Arpay\Contracts\SubscribableInterface;
-use Arpay\Contracts\InstallmentQueryableInterface;
 use Arpay\Exceptions\GatewayNotFoundException;
-use Arpay\Gateways\PayTR\PayTRGateway;
-use Arpay\Gateways\Iyzico\IyzicoGateway;
-use Arpay\Gateways\Vepara\VeparaGateway;
-use Arpay\Gateways\ParamPos\ParamPosGateway;
 use Arpay\Gateways\Ipara\IparaGateway;
+use Arpay\Gateways\Iyzico\IyzicoGateway;
 use Arpay\Gateways\Odeal\OdealGateway;
-use Arpay\Gateways\PayNet\PaynetGateway;
-use Arpay\Gateways\PayU\PayUGateway;
 use Arpay\Gateways\Papara\PaparaGateway;
+use Arpay\Gateways\ParamPos\ParamPosGateway;
+use Arpay\Gateways\PayNet\PaynetGateway;
+use Arpay\Gateways\PayTR\PayTRGateway;
+use Arpay\Gateways\PayU\PayUGateway;
+use Arpay\Gateways\Vepara\VeparaGateway;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Arpay Facade ve ArpayFactory birim testleri.
+ *
+ * @internal
+ *
+ * @coversNothing
  */
 class ArpayTest extends TestCase
 {
@@ -83,10 +87,10 @@ class ArpayTest extends TestCase
     public function test_create_with_config_sets_test_mode(): void
     {
         $gateway = Arpay::create('paytr', [
-            'merchant_id'   => '123456',
-            'merchant_key'  => 'XXXXX',
+            'merchant_id' => '123456',
+            'merchant_key' => 'XXXXX',
             'merchant_salt' => 'YYYYY',
-            'test_mode'     => true,
+            'test_mode' => true,
         ]);
 
         $this->assertTrue($gateway->isTestMode());

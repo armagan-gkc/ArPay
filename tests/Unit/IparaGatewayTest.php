@@ -16,6 +16,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * iPara Gateway birim testleri.
+ *
+ * @internal
+ *
+ * @coversNothing
  */
 class IparaGatewayTest extends TestCase
 {
@@ -28,9 +32,9 @@ class IparaGatewayTest extends TestCase
         $this->httpClient = new MockHttpClient();
 
         $this->gateway->configure(new Config([
-            'public_key'  => 'test_public_key',
+            'public_key' => 'test_public_key',
             'private_key' => 'test_private_key',
-            'test_mode'   => true,
+            'test_mode' => true,
         ]));
         $this->gateway->setHttpClient($this->httpClient);
     }
@@ -52,9 +56,9 @@ class IparaGatewayTest extends TestCase
     public function test_successful_payment(): void
     {
         $this->httpClient->addResponse(200, [
-            'result'        => '1',
+            'result' => '1',
             'transactionId' => 'IP-TXN-001',
-            'orderId'       => 'ORDER-IP-001',
+            'orderId' => 'ORDER-IP-001',
         ]);
 
         $request = PaymentRequest::create()
@@ -73,8 +77,8 @@ class IparaGatewayTest extends TestCase
     public function test_failed_payment(): void
     {
         $this->httpClient->addResponse(200, [
-            'result'       => '0',
-            'errorCode'    => 'DECLINED',
+            'result' => '0',
+            'errorCode' => 'DECLINED',
             'errorMessage' => 'Kart reddedildi.',
         ]);
 
@@ -103,7 +107,7 @@ class IparaGatewayTest extends TestCase
     public function test_successful_refund(): void
     {
         $this->httpClient->addResponse(200, [
-            'result'        => '1',
+            'result' => '1',
             'transactionId' => 'IP-REF-001',
         ]);
 
@@ -120,11 +124,11 @@ class IparaGatewayTest extends TestCase
     public function test_successful_query(): void
     {
         $this->httpClient->addResponse(200, [
-            'result'        => '1',
+            'result' => '1',
             'transactionId' => 'IP-TXN-001',
-            'orderId'       => 'ORDER-IP-001',
-            'amount'        => 25000,
-            'status'        => '1',
+            'orderId' => 'ORDER-IP-001',
+            'amount' => 25000,
+            'status' => '1',
         ]);
 
         $request = QueryRequest::create()
@@ -144,7 +148,7 @@ class IparaGatewayTest extends TestCase
             PaymentRequest::create()
                 ->amount(100.00)
                 ->orderId('ORDER-URL-TEST')
-                ->card(CreditCard::create('Test', '5528790000000008', '12', '2030', '123'))
+                ->card(CreditCard::create('Test', '5528790000000008', '12', '2030', '123')),
         );
 
         $lastRequest = $this->httpClient->getLastRequest();

@@ -34,6 +34,7 @@ interface GatewayInterface
      * Gateway yapılandırmasını uygular.
      *
      * @param Config $config API anahtarları ve diğer yapılandırma değerleri
+     *
      * @return static Zincirleme kullanım için kendini döndürür
      */
     public function configure(Config $config): static;
@@ -49,6 +50,7 @@ interface GatewayInterface
      * Test (sandbox) modunu açar veya kapatır.
      *
      * @param bool $active true ise test modu aktif, false ise canlı mod
+     *
      * @return static Zincirleme kullanım için kendini döndürür
      */
     public function setTestMode(bool $active = true): static;

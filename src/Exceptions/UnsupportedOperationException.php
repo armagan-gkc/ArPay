@@ -16,7 +16,7 @@ namespace Arpay\Exceptions;
 class UnsupportedOperationException extends ArpayException
 {
     /**
-     * @param string $gateway   Gateway adı
+     * @param string $gateway Gateway adı
      * @param string $operation İstenen işlem adı
      */
     public function __construct(string $gateway, string $operation)

@@ -20,8 +20,7 @@ class Address
         public readonly string $district = '',
         public readonly string $zipCode = '',
         public readonly string $country = 'Turkey',
-    ) {
-    }
+    ) {}
 
     /**
      * Yeni adres nesnesi oluşturur.

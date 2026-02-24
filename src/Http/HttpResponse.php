@@ -15,16 +15,15 @@ namespace Arpay\Http;
 class HttpResponse
 {
     /**
-     * @param int    $statusCode HTTP durum kodu
-     * @param string $body       Yanıt gövdesi (ham metin)
+     * @param int $statusCode HTTP durum kodu
+     * @param string $body Yanıt gövdesi (ham metin)
      * @param array<string, string> $headers Yanıt başlıkları
      */
     public function __construct(
         protected readonly int $statusCode,
         protected readonly string $body,
         protected readonly array $headers = [],
-    ) {
-    }
+    ) {}
 
     /**
      * HTTP durum kodunu döndürür.

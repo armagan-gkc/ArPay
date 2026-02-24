@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace Arpay\Tests\Unit;
 
-use Arpay\DTO\PaymentRequest;
+use Arpay\DTO\CartItem;
 use Arpay\DTO\CreditCard;
 use Arpay\DTO\Customer;
-use Arpay\DTO\CartItem;
+use Arpay\DTO\PaymentRequest;
 use PHPUnit\Framework\TestCase;
 
 /**
  * PaymentRequest Builder birim testleri.
+ *
+ * @internal
+ *
+ * @coversNothing
  */
 class PaymentRequestTest extends TestCase
 {

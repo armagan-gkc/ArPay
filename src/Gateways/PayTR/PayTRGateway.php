@@ -25,6 +25,7 @@ use Arpay\DTO\SubscriptionResponse;
 use Arpay\Enums\PaymentStatus;
 use Arpay\Exceptions\AuthenticationException;
 use Arpay\Gateways\AbstractGateway;
+use Arpay\Support\HashGenerator;
 
 /**
  * PayTR ödeme altyapısı gateway implementasyonu.
@@ -43,6 +44,7 @@ use Arpay\Gateways\AbstractGateway;
  * ```
  *
  * @author Armağan Gökce
+ *
  * @see https://dev.paytr.com/
  */
 class PayTRGateway extends AbstractGateway implements PayableInterface, RefundableInterface, QueryableInterface, SecurePayableInterface, SubscribableInterface, InstallmentQueryableInterface
@@ -59,52 +61,19 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
     /** @var string PayTR BIN sorgulama path'i */
     private const BIN_QUERY_PATH = '/odeme/api/bin-detail';
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return 'PayTR';
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getShortName(): string
     {
         return 'paytr';
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getSupportedFeatures(): array
     {
         return ['pay', 'payInstallment', 'refund', 'query', '3dsecure', 'subscription', 'installmentQuery'];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getRequiredConfigKeys(): array
-    {
-        return ['merchant_id', 'merchant_key', 'merchant_salt'];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getBaseUrl(): string
-    {
-        return 'https://www.paytr.com';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getTestBaseUrl(): string
-    {
-        return 'https://test.paytr.com';
     }
 
     /**
@@ -118,57 +87,57 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
     public function pay(PaymentRequest $request): PaymentResponse
     {
         $card = $request->getCard();
-        if ($card === null) {
+        if (null === $card) {
             return PaymentResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
         }
 
-        /* Sepet ürünlerini PayTR formatına dönüştür */
+        // Sepet ürünlerini PayTR formatına dönüştür
         $basketItems = [];
         foreach ($request->getCartItems() as $item) {
             $basketItems[] = [
-                'name'     => $item->name,
-                'price'    => $item->price,
+                'name' => $item->name,
+                'price' => $item->price,
                 'quantity' => $item->quantity,
             ];
         }
 
-        /* Sepet boşsa ödeme açıklamasından oluştur */
+        // Sepet boşsa ödeme açıklamasından oluştur
         if (empty($basketItems)) {
             $basketItems[] = [
-                'name'     => $request->getDescription() ?: 'Ödeme',
-                'price'    => $request->getAmount(),
+                'name' => $request->getDescription() ?: 'Ödeme',
+                'price' => $request->getAmount(),
                 'quantity' => 1,
             ];
         }
 
         $params = [
-            'merchant_id'      => $this->config->get('merchant_id'),
-            'user_ip'          => $request->getCustomer()?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
-            'merchant_oid'     => $request->getOrderId(),
-            'email'            => $request->getCustomer()?->email ?? 'musteri@example.com',
-            'payment_amount'   => PayTRHelper::formatAmount($request->getAmount()),
-            'user_basket'      => PayTRHelper::formatBasket($basketItems),
-            'no_installment'   => $request->getInstallmentCount() <= 1 ? '1' : '0',
-            'max_installment'  => (string) $request->getInstallmentCount(),
-            'currency'         => $request->getCurrency() === 'TRY' ? 'TL' : $request->getCurrency(),
-            'test_mode'        => $this->testMode ? '1' : '0',
-            'cc_owner'         => $card->cardHolderName,
-            'card_number'      => $card->cardNumber,
-            'expiry_month'     => $card->expireMonth,
-            'expiry_year'      => $card->expireYear,
-            'cvv'              => $card->cvv,
-            'non_3d'           => '1',
+            'merchant_id' => $this->config->get('merchant_id'),
+            'user_ip' => $request->getCustomer()?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
+            'merchant_oid' => $request->getOrderId(),
+            'email' => $request->getCustomer()?->email ?? 'musteri@example.com',
+            'payment_amount' => PayTRHelper::formatAmount($request->getAmount()),
+            'user_basket' => PayTRHelper::formatBasket($basketItems),
+            'no_installment' => $request->getInstallmentCount() <= 1 ? '1' : '0',
+            'max_installment' => (string) $request->getInstallmentCount(),
+            'currency' => 'TRY' === $request->getCurrency() ? 'TL' : $request->getCurrency(),
+            'test_mode' => $this->testMode ? '1' : '0',
+            'cc_owner' => $card->cardHolderName,
+            'card_number' => $card->cardNumber,
+            'expiry_month' => $card->expireMonth,
+            'expiry_year' => $card->expireYear,
+            'cvv' => $card->cvv,
+            'non_3d' => '1',
             'installment_count' => (string) $request->getInstallmentCount(),
         ];
 
-        /* Token oluştur */
+        // Token oluştur
         $params['paytr_token'] = PayTRHelper::generateToken($params, $this->config);
 
-        /* API isteği gönder */
+        // API isteği gönder
         $response = $this->httpClient->post($this->getActiveBaseUrl() . self::DIRECT_API_PATH, [], $params);
         $data = $response->toArray();
 
-        /* Yanıtı değerlendir */
+        // Yanıtı değerlendir
         if (($data['status'] ?? '') === 'success') {
             return PaymentResponse::successful(
                 transactionId: $data['trans_id'] ?? $data['merchant_oid'] ?? $request->getOrderId(),
@@ -195,7 +164,7 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
      */
     public function payInstallment(PaymentRequest $request): PaymentResponse
     {
-        /* Taksit sayısı en az 2 olmalı */
+        // Taksit sayısı en az 2 olmalı
         if ($request->getInstallmentCount() < 2) {
             return PaymentResponse::failed('INVALID_INSTALLMENT', 'Taksitli ödeme için en az 2 taksit gereklidir.');
         }
@@ -214,10 +183,10 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
         $orderId = $request->getOrderId() ?: $request->getTransactionId();
 
         $params = [
-            'merchant_id'  => $this->config->get('merchant_id'),
+            'merchant_id' => $this->config->get('merchant_id'),
             'merchant_oid' => $orderId,
             'return_amount' => $amount,
-            'paytr_token'  => PayTRHelper::generateRefundToken($orderId, $amount, $this->config),
+            'paytr_token' => PayTRHelper::generateRefundToken($orderId, $amount, $this->config),
         ];
 
         $response = $this->httpClient->post($this->getActiveBaseUrl() . self::REFUND_PATH, [], $params);
@@ -248,12 +217,12 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
         $orderId = $request->getOrderId() ?: $request->getTransactionId();
 
         $hashStr = $this->config->get('merchant_id') . $orderId . $this->config->get('merchant_salt');
-        $token = \Arpay\Support\HashGenerator::hmacSha256Base64($hashStr, $this->config->get('merchant_key'));
+        $token = HashGenerator::hmacSha256Base64($hashStr, $this->config->get('merchant_key'));
 
         $params = [
-            'merchant_id'  => $this->config->get('merchant_id'),
+            'merchant_id' => $this->config->get('merchant_id'),
             'merchant_oid' => $orderId,
-            'paytr_token'  => $token,
+            'paytr_token' => $token,
         ];
 
         $response = $this->httpClient->post(
@@ -265,10 +234,10 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
 
         if (($data['status'] ?? '') === 'success') {
             $paymentStatus = match ($data['payment_status'] ?? '') {
-                'success'  => PaymentStatus::Successful,
-                'failed'   => PaymentStatus::Failed,
-                'pending'  => PaymentStatus::Pending,
-                default    => PaymentStatus::Pending,
+                'success' => PaymentStatus::Successful,
+                'failed' => PaymentStatus::Failed,
+                'pending' => PaymentStatus::Pending,
+                default => PaymentStatus::Pending,
             };
 
             return QueryResponse::successful(
@@ -298,45 +267,45 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
     public function initSecurePayment(SecurePaymentRequest $request): SecureInitResponse
     {
         $card = $request->getCard();
-        if ($card === null) {
+        if (null === $card) {
             return SecureInitResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
         }
 
         $basketItems = [];
         foreach ($request->getCartItems() as $item) {
             $basketItems[] = [
-                'name'     => $item->name,
-                'price'    => $item->price,
+                'name' => $item->name,
+                'price' => $item->price,
                 'quantity' => $item->quantity,
             ];
         }
 
         if (empty($basketItems)) {
             $basketItems[] = [
-                'name'     => $request->getDescription() ?: 'Ödeme',
-                'price'    => $request->getAmount(),
+                'name' => $request->getDescription() ?: 'Ödeme',
+                'price' => $request->getAmount(),
                 'quantity' => 1,
             ];
         }
 
         $params = [
-            'merchant_id'      => $this->config->get('merchant_id'),
-            'user_ip'          => $request->getCustomer()?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
-            'merchant_oid'     => $request->getOrderId(),
-            'email'            => $request->getCustomer()?->email ?? 'musteri@example.com',
-            'payment_amount'   => PayTRHelper::formatAmount($request->getAmount()),
-            'user_basket'      => PayTRHelper::formatBasket($basketItems),
-            'no_installment'   => $request->getInstallmentCount() <= 1 ? '1' : '0',
-            'max_installment'  => (string) $request->getInstallmentCount(),
-            'currency'         => $request->getCurrency() === 'TRY' ? 'TL' : $request->getCurrency(),
-            'test_mode'        => $this->testMode ? '1' : '0',
-            'merchant_ok_url'  => $request->getSuccessUrl() ?: $request->getCallbackUrl(),
+            'merchant_id' => $this->config->get('merchant_id'),
+            'user_ip' => $request->getCustomer()?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
+            'merchant_oid' => $request->getOrderId(),
+            'email' => $request->getCustomer()?->email ?? 'musteri@example.com',
+            'payment_amount' => PayTRHelper::formatAmount($request->getAmount()),
+            'user_basket' => PayTRHelper::formatBasket($basketItems),
+            'no_installment' => $request->getInstallmentCount() <= 1 ? '1' : '0',
+            'max_installment' => (string) $request->getInstallmentCount(),
+            'currency' => 'TRY' === $request->getCurrency() ? 'TL' : $request->getCurrency(),
+            'test_mode' => $this->testMode ? '1' : '0',
+            'merchant_ok_url' => $request->getSuccessUrl() ?: $request->getCallbackUrl(),
             'merchant_fail_url' => $request->getFailUrl() ?: $request->getCallbackUrl(),
-            'cc_owner'         => $card->cardHolderName,
-            'card_number'      => $card->cardNumber,
-            'expiry_month'     => $card->expireMonth,
-            'expiry_year'      => $card->expireYear,
-            'cvv'              => $card->cvv,
+            'cc_owner' => $card->cardHolderName,
+            'card_number' => $card->cardNumber,
+            'expiry_month' => $card->expireMonth,
+            'expiry_year' => $card->expireYear,
+            'cvv' => $card->cvv,
             'installment_count' => (string) $request->getInstallmentCount(),
         ];
 
@@ -346,7 +315,7 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
         $data = $response->toArray();
 
         if (($data['status'] ?? '') === 'success' && isset($data['token'])) {
-            /* PayTR iframe URL'sini oluştur */
+            // PayTR iframe URL'sini oluştur
             $iframeUrl = "https://www.paytr.com/odeme/guvenli/{$data['token']}";
 
             $html = <<<HTML
@@ -382,6 +351,7 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
      * Hash kontrolü başarısızsa AuthenticationException fırlatır.
      *
      * {@inheritdoc}
+     *
      * @throws AuthenticationException Hash doğrulaması başarısızsa
      */
     public function completeSecurePayment(SecureCallbackData $data): PaymentResponse
@@ -391,7 +361,7 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
         $totalAmount = (string) $data->get('total_amount', '');
         $hash = (string) $data->get('hash', '');
 
-        /* Hash doğrulaması */
+        // Hash doğrulaması
         $isValid = PayTRHelper::verifyCallback(
             merchantOid: $merchantOid,
             merchantSalt: $this->config->get('merchant_salt'),
@@ -405,7 +375,7 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
             throw new AuthenticationException('PayTR callback hash doğrulaması başarısız.');
         }
 
-        if ($status === 'success') {
+        if ('success' === $status) {
             return PaymentResponse::successful(
                 transactionId: $merchantOid,
                 orderId: $merchantOid,
@@ -434,27 +404,27 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
          * Burada temel bir implementasyon sağlanmıştır.
          */
         $card = $request->getCard();
-        if ($card === null) {
+        if (null === $card) {
             return SubscriptionResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
         }
 
         $params = [
             'merchant_id' => $this->config->get('merchant_id'),
-            'utoken'      => 'aut', /* Otomatik ödeme tokenı al */
-            'plan_name'   => $request->getPlanName(),
-            'amount'      => PayTRHelper::formatAmount($request->getAmount()),
-            'currency'    => $request->getCurrency() === 'TRY' ? 'TL' : $request->getCurrency(),
-            'period'      => $request->getPeriod(),
-            'cc_owner'    => $card->cardHolderName,
+            'utoken' => 'aut', // Otomatik ödeme tokenı al
+            'plan_name' => $request->getPlanName(),
+            'amount' => PayTRHelper::formatAmount($request->getAmount()),
+            'currency' => 'TRY' === $request->getCurrency() ? 'TL' : $request->getCurrency(),
+            'period' => $request->getPeriod(),
+            'cc_owner' => $card->cardHolderName,
             'card_number' => $card->cardNumber,
             'expiry_month' => $card->expireMonth,
             'expiry_year' => $card->expireYear,
-            'cvv'         => $card->cvv,
-            'test_mode'   => $this->testMode ? '1' : '0',
+            'cvv' => $card->cvv,
+            'test_mode' => $this->testMode ? '1' : '0',
         ];
 
         $hashStr = $this->config->get('merchant_id') . $request->getPlanName() . $this->config->get('merchant_salt');
-        $params['paytr_token'] = \Arpay\Support\HashGenerator::hmacSha256Base64($hashStr, $this->config->get('merchant_key'));
+        $params['paytr_token'] = HashGenerator::hmacSha256Base64($hashStr, $this->config->get('merchant_key'));
 
         $response = $this->httpClient->post(
             $this->getActiveBaseUrl() . '/odeme/api/recurring',
@@ -486,12 +456,12 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
     public function cancelSubscription(string $subscriptionId): SubscriptionResponse
     {
         $hashStr = $this->config->get('merchant_id') . $subscriptionId . $this->config->get('merchant_salt');
-        $token = \Arpay\Support\HashGenerator::hmacSha256Base64($hashStr, $this->config->get('merchant_key'));
+        $token = HashGenerator::hmacSha256Base64($hashStr, $this->config->get('merchant_key'));
 
         $params = [
-            'merchant_id'     => $this->config->get('merchant_id'),
+            'merchant_id' => $this->config->get('merchant_id'),
             'subscription_id' => $subscriptionId,
-            'paytr_token'     => $token,
+            'paytr_token' => $token,
         ];
 
         $response = $this->httpClient->post(
@@ -524,11 +494,11 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
     public function queryInstallments(string $binNumber, float $amount): array
     {
         $hashStr = $this->config->get('merchant_id') . $binNumber . $this->config->get('merchant_salt');
-        $token = \Arpay\Support\HashGenerator::hmacSha256Base64($hashStr, $this->config->get('merchant_key'));
+        $token = HashGenerator::hmacSha256Base64($hashStr, $this->config->get('merchant_key'));
 
         $params = [
             'merchant_id' => $this->config->get('merchant_id'),
-            'bin_number'  => $binNumber,
+            'bin_number' => $binNumber,
             'paytr_token' => $token,
         ];
 
@@ -554,5 +524,20 @@ class PayTRGateway extends AbstractGateway implements PayableInterface, Refundab
         }
 
         return $installments;
+    }
+
+    protected function getRequiredConfigKeys(): array
+    {
+        return ['merchant_id', 'merchant_key', 'merchant_salt'];
+    }
+
+    protected function getBaseUrl(): string
+    {
+        return 'https://www.paytr.com';
+    }
+
+    protected function getTestBaseUrl(): string
+    {
+        return 'https://test.paytr.com';
     }
 }

@@ -30,10 +30,10 @@ class CreditCard
 {
     /**
      * @param string $cardHolderName Kart sahibinin adı soyadı
-     * @param string $cardNumber     Kart numarası (boşluk/tire temizlenmiş)
-     * @param string $expireMonth    Son kullanma ayı (01-12)
-     * @param string $expireYear     Son kullanma yılı (4 haneli)
-     * @param string $cvv            Güvenlik kodu (3 veya 4 hane)
+     * @param string $cardNumber Kart numarası (boşluk/tire temizlenmiş)
+     * @param string $expireMonth Son kullanma ayı (01-12)
+     * @param string $expireYear Son kullanma yılı (4 haneli)
+     * @param string $cvv Güvenlik kodu (3 veya 4 hane)
      */
     public function __construct(
         public readonly string $cardHolderName,
@@ -41,8 +41,7 @@ class CreditCard
         public readonly string $expireMonth,
         public readonly string $expireYear,
         public readonly string $cvv,
-    ) {
-    }
+    ) {}
 
     /**
      * Yeni kart bilgisi nesnesi oluşturur.
@@ -58,14 +57,14 @@ class CreditCard
         string $expireYear,
         string $cvv,
     ): self {
-        /* Kart numarasındaki boşluk ve tireleri temizle */
+        // Kart numarasındaki boşluk ve tireleri temizle
         $cardNumber = preg_replace('/[\s\-]/', '', $cardNumber) ?? $cardNumber;
 
-        /* Ay değerini 2 haneye standartlaştır */
+        // Ay değerini 2 haneye standartlaştır
         $expireMonth = str_pad($expireMonth, 2, '0', STR_PAD_LEFT);
 
-        /* Yıl değerini 4 haneye standartlaştır */
-        if (strlen($expireYear) === 2) {
+        // Yıl değerini 4 haneye standartlaştır
+        if (2 === strlen($expireYear)) {
             $expireYear = '20' . $expireYear;
         }
 
@@ -129,14 +128,14 @@ class CreditCard
     {
         $number = preg_replace('/\D/', '', $number) ?? '';
 
-        if ($number === '' || strlen($number) < 13 || strlen($number) > 19) {
+        if ('' === $number || strlen($number) < 13 || strlen($number) > 19) {
             return false;
         }
 
         $sum = 0;
         $alternate = false;
 
-        for ($i = strlen($number) - 1; $i >= 0; $i--) {
+        for ($i = strlen($number) - 1; $i >= 0; --$i) {
             $digit = (int) $number[$i];
 
             if ($alternate) {
@@ -150,6 +149,6 @@ class CreditCard
             $alternate = !$alternate;
         }
 
-        return $sum % 10 === 0;
+        return 0 === $sum % 10;
     }
 }

@@ -9,6 +9,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * HashGenerator birim testleri.
+ *
+ * @internal
+ *
+ * @coversNothing
  */
 class HashGeneratorTest extends TestCase
 {

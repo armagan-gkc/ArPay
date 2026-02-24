@@ -19,16 +19,15 @@ class InstallmentInfo
         public readonly float $installmentAmount,
         public readonly float $totalAmount,
         public readonly float $interestRate = 0.0,
-    ) {
-    }
+    ) {}
 
     /**
      * Yeni taksit bilgisi oluşturur.
      *
-     * @param int   $count          Taksit sayısı
+     * @param int $count Taksit sayısı
      * @param float $perInstallment Taksit başına tutar
-     * @param float $total          Toplam tutar (faiz dahil)
-     * @param float $interestRate   Faiz oranı (yüzde)
+     * @param float $total Toplam tutar (faiz dahil)
+     * @param float $interestRate Faiz oranı (yüzde)
      */
     public static function create(
         int $count,

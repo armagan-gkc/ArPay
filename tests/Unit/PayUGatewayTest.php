@@ -16,6 +16,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * PayU Gateway birim testleri.
+ *
+ * @internal
+ *
+ * @coversNothing
  */
 class PayUGatewayTest extends TestCase
 {
@@ -28,9 +32,9 @@ class PayUGatewayTest extends TestCase
         $this->httpClient = new MockHttpClient();
 
         $this->gateway->configure(new Config([
-            'merchant'   => 'TEST_MERCHANT',
+            'merchant' => 'TEST_MERCHANT',
             'secret_key' => 'test_secret_key',
-            'test_mode'  => true,
+            'test_mode' => true,
         ]));
         $this->gateway->setHttpClient($this->httpClient);
     }
@@ -53,10 +57,10 @@ class PayUGatewayTest extends TestCase
     public function test_successful_payment(): void
     {
         $this->httpClient->addResponse(200, [
-            'STATUS'      => 'SUCCESS',
+            'STATUS' => 'SUCCESS',
             'RETURN_CODE' => 'AUTHORIZED',
-            'REFNO'       => 'PU-TXN-001',
-            'ORDER_REF'   => 'ORDER-PU-001',
+            'REFNO' => 'PU-TXN-001',
+            'ORDER_REF' => 'ORDER-PU-001',
         ]);
 
         $request = PaymentRequest::create()
@@ -75,8 +79,8 @@ class PayUGatewayTest extends TestCase
     public function test_failed_payment(): void
     {
         $this->httpClient->addResponse(200, [
-            'STATUS'         => 'FAILED',
-            'RETURN_CODE'    => 'DECLINED',
+            'STATUS' => 'FAILED',
+            'RETURN_CODE' => 'DECLINED',
             'RETURN_MESSAGE' => 'Kart reddedildi.',
         ]);
 
@@ -106,8 +110,8 @@ class PayUGatewayTest extends TestCase
     {
         $this->httpClient->addResponse(200, [
             'RESPONSE_CODE' => '0',
-            'STATUS'        => 'SUCCESS',
-            'IRN_REFNO'     => 'PU-REF-001',
+            'STATUS' => 'SUCCESS',
+            'IRN_REFNO' => 'PU-REF-001',
         ]);
 
         $request = RefundRequest::create()
@@ -123,8 +127,8 @@ class PayUGatewayTest extends TestCase
     public function test_successful_query(): void
     {
         $this->httpClient->addResponse(200, [
-            'ORDER_REF'    => 'ORDER-PU-001',
-            'REFNO'        => 'PU-TXN-001',
+            'ORDER_REF' => 'ORDER-PU-001',
+            'REFNO' => 'PU-TXN-001',
             'ORDER_AMOUNT' => '500.00',
             'ORDER_STATUS' => 'PAYMENT_AUTHORIZED',
         ]);
@@ -146,7 +150,7 @@ class PayUGatewayTest extends TestCase
             PaymentRequest::create()
                 ->amount(100.00)
                 ->orderId('ORDER-URL-TEST')
-                ->card(CreditCard::create('Test', '5528790000000008', '12', '2030', '123'))
+                ->card(CreditCard::create('Test', '5528790000000008', '12', '2030', '123')),
         );
 
         $lastRequest = $this->httpClient->getLastRequest();

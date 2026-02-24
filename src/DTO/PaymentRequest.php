@@ -45,16 +45,16 @@ class PaymentRequest
     /** @var int Taksit sayısı (1 = tek çekim) */
     protected int $installmentCount = 1;
 
-    /** @var CreditCard|null Kart bilgileri */
+    /** @var null|CreditCard Kart bilgileri */
     protected ?CreditCard $card = null;
 
-    /** @var Customer|null Müşteri bilgileri */
+    /** @var null|Customer Müşteri bilgileri */
     protected ?Customer $customer = null;
 
-    /** @var Address|null Fatura adresi */
+    /** @var null|Address Fatura adresi */
     protected ?Address $billingAddress = null;
 
-    /** @var Address|null Teslimat adresi */
+    /** @var null|Address Teslimat adresi */
     protected ?Address $shippingAddress = null;
 
     /** @var CartItem[] Sepet ürünleri */
@@ -86,9 +86,9 @@ class PaymentRequest
     /**
      * Para birimini ayarlar.
      *
-     * @param string|Currency $currency Para birimi ('TRY', 'USD', 'EUR' veya Currency enum)
+     * @param Currency|string $currency Para birimi ('TRY', 'USD', 'EUR' veya Currency enum)
      */
-    public function currency(string|Currency $currency): static
+    public function currency(Currency|string $currency): static
     {
         $this->currency = $currency instanceof Currency ? $currency->value : $currency;
 

@@ -34,16 +34,16 @@ enum CardType: string
     {
         $bin = preg_replace('/\D/', '', $bin);
 
-        if ($bin === null || strlen($bin) < 1) {
+        if (null === $bin || strlen($bin) < 1) {
             return null;
         }
 
-        /* Visa: 4 ile başlar */
+        // Visa: 4 ile başlar
         if (str_starts_with($bin, '4')) {
             return self::Visa;
         }
 
-        /* MasterCard: 51-55 veya 2221-2720 aralığı */
+        // MasterCard: 51-55 veya 2221-2720 aralığı
         $firstTwo = (int) substr($bin, 0, 2);
         $firstFour = strlen($bin) >= 4 ? (int) substr($bin, 0, 4) : 0;
 
@@ -51,7 +51,7 @@ enum CardType: string
             return self::MasterCard;
         }
 
-        /* Troy: 979200-979299 aralığı (BKM tanımlı) */
+        // Troy: 979200-979299 aralığı (BKM tanımlı)
         if (strlen($bin) >= 6) {
             $firstSix = (int) substr($bin, 0, 6);
             if ($firstSix >= 979200 && $firstSix <= 979299) {
@@ -59,8 +59,8 @@ enum CardType: string
             }
         }
 
-        /* Amex: 34 veya 37 ile başlar */
-        if ($firstTwo === 34 || $firstTwo === 37) {
+        // Amex: 34 veya 37 ile başlar
+        if (34 === $firstTwo || 37 === $firstTwo) {
             return self::Amex;
         }
 

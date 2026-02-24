@@ -43,6 +43,7 @@ use Arpay\Gateways\AbstractGateway;
  * NOT: Iyzico sepet ürünü (en az 1 adet CartItem) zorunlu tutar.
  *
  * @author Armağan Gökce
+ *
  * @see https://dev.iyzipay.com/
  */
 class IyzicoGateway extends AbstractGateway implements PayableInterface, RefundableInterface, QueryableInterface, SecurePayableInterface, SubscribableInterface, InstallmentQueryableInterface
@@ -53,53 +54,19 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
     /** @var string Sandbox API URL'si */
     private const SANDBOX_BASE_URL = 'https://sandbox-api.iyzipay.com';
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return 'Iyzico';
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getShortName(): string
     {
         return 'iyzico';
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getSupportedFeatures(): array
     {
         return ['pay', 'payInstallment', 'refund', 'query', '3dsecure', 'subscription', 'installmentQuery'];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getRequiredConfigKeys(): array
-    {
-        return ['api_key', 'secret_key'];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getBaseUrl(): string
-    {
-        /* base_url config'den özelleştirilebilir */
-        return $this->config->get('base_url', self::LIVE_BASE_URL);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getTestBaseUrl(): string
-    {
-        return $this->config->get('base_url', self::SANDBOX_BASE_URL);
     }
 
     /**
@@ -112,7 +79,7 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
     public function pay(PaymentRequest $request): PaymentResponse
     {
         $card = $request->getCard();
-        if ($card === null) {
+        if (null === $card) {
             return PaymentResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
         }
 
@@ -157,11 +124,11 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
     public function refund(RefundRequest $request): RefundResponse
     {
         $body = [
-            'locale'          => 'tr',
+            'locale' => 'tr',
             'paymentTransactionId' => $request->getTransactionId(),
-            'price'           => IyzicoHelper::formatAmount($request->getAmount()),
-            'currency'        => 'TRY',
-            'ip'              => $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1',
+            'price' => IyzicoHelper::formatAmount($request->getAmount()),
+            'currency' => 'TRY',
+            'ip' => $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1',
         ];
 
         $jsonBody = json_encode($body, JSON_THROW_ON_ERROR);
@@ -202,7 +169,7 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
     public function query(QueryRequest $request): QueryResponse
     {
         $body = [
-            'locale'    => 'tr',
+            'locale' => 'tr',
             'paymentId' => $request->getTransactionId(),
         ];
 
@@ -223,11 +190,11 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
 
         if (($data['status'] ?? '') === 'success') {
             $paymentStatus = match ($data['paymentStatus'] ?? '') {
-                'SUCCESS'          => PaymentStatus::Successful,
-                'FAILURE'          => PaymentStatus::Failed,
+                'SUCCESS' => PaymentStatus::Successful,
+                'FAILURE' => PaymentStatus::Failed,
                 'INIT_THREEDS',
                 'CALLBACK_THREEDS' => PaymentStatus::Pending,
-                default            => PaymentStatus::Pending,
+                default => PaymentStatus::Pending,
             };
 
             return QueryResponse::successful(
@@ -257,7 +224,7 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
     public function initSecurePayment(SecurePaymentRequest $request): SecureInitResponse
     {
         $card = $request->getCard();
-        if ($card === null) {
+        if (null === $card) {
             return SecureInitResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
         }
 
@@ -280,11 +247,11 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
         $data = $response->toArray();
 
         if (($data['status'] ?? '') === 'success' && isset($data['threeDSHtmlContent'])) {
-            /* Iyzico Base64 kodlanmış HTML döndürür */
-            $htmlContent = base64_decode($data['threeDSHtmlContent']);
+            // Iyzico Base64 kodlanmış HTML döndürür
+            $htmlContent = base64_decode($data['threeDSHtmlContent'], true);
 
             return SecureInitResponse::html(
-                $htmlContent !== false ? $htmlContent : '',
+                false !== $htmlContent ? $htmlContent : '',
                 $data,
             );
         }
@@ -306,7 +273,7 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
         $paymentId = (string) $data->get('paymentId', '');
 
         $body = [
-            'locale'    => 'tr',
+            'locale' => 'tr',
             'paymentId' => $paymentId,
         ];
 
@@ -336,24 +303,24 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
     public function createSubscription(SubscriptionRequest $request): SubscriptionResponse
     {
         $card = $request->getCard();
-        if ($card === null) {
+        if (null === $card) {
             return SubscriptionResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
         }
 
         $body = [
-            'locale'         => 'tr',
+            'locale' => 'tr',
             'pricingPlanReferenceCode' => $request->getPlanName(),
-            'paymentCard'    => [
+            'paymentCard' => [
                 'cardHolderName' => $card->cardHolderName,
-                'cardNumber'     => $card->cardNumber,
-                'expireMonth'    => $card->expireMonth,
-                'expireYear'     => $card->expireYear,
-                'cvc'            => $card->cvv,
+                'cardNumber' => $card->cardNumber,
+                'expireMonth' => $card->expireMonth,
+                'expireYear' => $card->expireYear,
+                'cvc' => $card->cvv,
             ],
-            'customer'       => [
-                'name'    => $request->getCustomer()?->firstName ?? '',
+            'customer' => [
+                'name' => $request->getCustomer()?->firstName ?? '',
                 'surname' => $request->getCustomer()?->lastName ?? '',
-                'email'   => $request->getCustomer()?->email ?? '',
+                'email' => $request->getCustomer()?->email ?? '',
             ],
         ];
 
@@ -395,7 +362,7 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
     public function cancelSubscription(string $subscriptionId): SubscriptionResponse
     {
         $body = [
-            'locale'                    => 'tr',
+            'locale' => 'tr',
             'subscriptionReferenceCode' => $subscriptionId,
         ];
 
@@ -437,9 +404,9 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
     public function queryInstallments(string $binNumber, float $amount): array
     {
         $body = [
-            'locale'     => 'tr',
-            'binNumber'  => $binNumber,
-            'price'      => IyzicoHelper::formatAmount($amount),
+            'locale' => 'tr',
+            'binNumber' => $binNumber,
+            'price' => IyzicoHelper::formatAmount($amount),
         ];
 
         $jsonBody = json_encode($body, JSON_THROW_ON_ERROR);
@@ -487,10 +454,27 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
         return $installments;
     }
 
+    protected function getRequiredConfigKeys(): array
+    {
+        return ['api_key', 'secret_key'];
+    }
+
+    protected function getBaseUrl(): string
+    {
+        // base_url config'den özelleştirilebilir
+        return $this->config->get('base_url', self::LIVE_BASE_URL);
+    }
+
+    protected function getTestBaseUrl(): string
+    {
+        return $this->config->get('base_url', self::SANDBOX_BASE_URL);
+    }
+
     /**
      * Ödeme API gövdesini oluşturur (pay ve initSecurePayment ortak).
      *
      * @param PaymentRequest $request Ödeme istek bilgileri
+     *
      * @return array<string, mixed> API istek gövdesi
      */
     private function buildPaymentBody(PaymentRequest $request): array
@@ -500,71 +484,71 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
         $billing = $request->getBillingAddress();
         $shipping = $request->getShippingAddress() ?? $billing;
 
-        /* Sepet ürünlerini hazırla */
+        // Sepet ürünlerini hazırla
         $basketItems = [];
         foreach ($request->getCartItems() as $item) {
             $basketItems[] = [
-                'id'        => $item->id,
-                'name'      => $item->name,
+                'id' => $item->id,
+                'name' => $item->name,
                 'category1' => $item->category,
-                'itemType'  => 'PHYSICAL',
-                'price'     => IyzicoHelper::formatAmount($item->price * $item->quantity),
+                'itemType' => 'PHYSICAL',
+                'price' => IyzicoHelper::formatAmount($item->price * $item->quantity),
             ];
         }
 
-        /* Sepet boşsa varsayılan ürün ekle */
+        // Sepet boşsa varsayılan ürün ekle
         if (empty($basketItems)) {
             $basketItems[] = [
-                'id'        => 'DEFAULT',
-                'name'      => $request->getDescription() ?: 'Ödeme',
+                'id' => 'DEFAULT',
+                'name' => $request->getDescription() ?: 'Ödeme',
                 'category1' => 'Genel',
-                'itemType'  => 'PHYSICAL',
-                'price'     => IyzicoHelper::formatAmount($request->getAmount()),
+                'itemType' => 'PHYSICAL',
+                'price' => IyzicoHelper::formatAmount($request->getAmount()),
             ];
         }
 
         $body = [
-            'locale'          => 'tr',
-            'conversationId'  => $request->getOrderId(),
-            'price'           => IyzicoHelper::formatAmount($request->getAmount()),
-            'paidPrice'       => IyzicoHelper::formatAmount($request->getAmount()),
-            'currency'        => $request->getCurrency() === 'TRY' ? 'TRY' : $request->getCurrency(),
-            'installment'     => $request->getInstallmentCount(),
-            'paymentChannel'  => 'WEB',
-            'paymentGroup'    => 'PRODUCT',
-            'paymentCard'     => [
+            'locale' => 'tr',
+            'conversationId' => $request->getOrderId(),
+            'price' => IyzicoHelper::formatAmount($request->getAmount()),
+            'paidPrice' => IyzicoHelper::formatAmount($request->getAmount()),
+            'currency' => 'TRY' === $request->getCurrency() ? 'TRY' : $request->getCurrency(),
+            'installment' => $request->getInstallmentCount(),
+            'paymentChannel' => 'WEB',
+            'paymentGroup' => 'PRODUCT',
+            'paymentCard' => [
                 'cardHolderName' => $card?->cardHolderName ?? '',
-                'cardNumber'     => $card?->cardNumber ?? '',
-                'expireMonth'    => $card?->expireMonth ?? '',
-                'expireYear'     => $card?->expireYear ?? '',
-                'cvc'            => $card?->cvv ?? '',
-                'registerCard'   => '0',
+                'cardNumber' => $card?->cardNumber ?? '',
+                'expireMonth' => $card?->expireMonth ?? '',
+                'expireYear' => $card?->expireYear ?? '',
+                'cvc' => $card?->cvv ?? '',
+                'registerCard' => '0',
             ],
-            'buyer'           => [
-                'id'                  => $customer?->identityNumber ?: 'BUYER_' . $request->getOrderId(),
-                'name'                => $customer?->firstName ?? 'Ad',
-                'surname'             => $customer?->lastName ?? 'Soyad',
-                'email'               => $customer?->email ?? 'musteri@example.com',
-                'identityNumber'      => $customer?->identityNumber ?: '11111111111',
+            'buyer' => [
+                'id' => $customer?->identityNumber ?: 'BUYER_' . $request->getOrderId(),
+                'name' => $customer?->firstName ?? 'Ad',
+                'surname' => $customer?->lastName ?? 'Soyad',
+                'email' => $customer?->email ?? 'musteri@example.com',
+                'identityNumber' => $customer?->identityNumber ?: '11111111111',
                 'registrationAddress' => $billing?->address ?? 'Adres',
-                'ip'                  => $customer?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
-                'city'                => $billing?->city ?? 'Istanbul',
-                'country'             => $billing?->country ?? 'Turkey',
-                'gsmNumber'           => $customer?->phone ?? '',
+                'ip' => $customer?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
+                'city' => $billing?->city ?? 'Istanbul',
+                'country' => $billing?->country ?? 'Turkey',
+                'gsmNumber' => $customer?->phone ?? '',
             ],
-            'billingAddress'  => [
+            'billingAddress' => [
                 'contactName' => $customer ? $customer->getFullName() : 'Ad Soyad',
-                'city'        => $billing?->city ?? 'Istanbul',
-                'country'     => $billing?->country ?? 'Turkey',
-                'address'     => $billing?->address ?? 'Adres',
+                'city' => $billing?->city ?? 'Istanbul',
+                'country' => $billing?->country ?? 'Turkey',
+                'address' => $billing?->address ?? 'Adres',
             ],
             'shippingAddress' => [
                 'contactName' => $customer ? $customer->getFullName() : 'Ad Soyad',
-                'city'        => $shipping?->city ?? $billing?->city ?? 'Istanbul',
-                'country'     => $shipping?->country ?? $billing?->country ?? 'Turkey',
-                'address'     => $shipping?->address ?? $billing?->address ?? 'Adres',
+                'city' => $shipping?->city ?? $billing?->city ?? 'Istanbul',
+                'country' => $shipping?->country ?? $billing?->country ?? 'Turkey',
+                'address' => $shipping?->address ?? $billing?->address ?? 'Adres',
             ],
-            'basketItems'     => $basketItems,
+            'basketItems' => $basketItems,
         ];
 
         return $body;
@@ -573,8 +557,9 @@ class IyzicoGateway extends AbstractGateway implements PayableInterface, Refunda
     /**
      * Gateway yanıtını PaymentResponse nesnesine dönüştürür.
      *
-     * @param array<string, mixed> $data    Gateway ham yanıtı
-     * @param string               $orderId Sipariş numarası
+     * @param array<string, mixed> $data Gateway ham yanıtı
+     * @param string $orderId Sipariş numarası
+     *
      * @return PaymentResponse Standart ödeme yanıtı
      */
     private function parsePaymentResponse(array $data, string $orderId): PaymentResponse

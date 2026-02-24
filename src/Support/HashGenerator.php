@@ -18,7 +18,8 @@ class HashGenerator
      * HMAC-SHA256 hash oluşturur.
      *
      * @param string $data İmzalanacak veri
-     * @param string $key  Gizli anahtar
+     * @param string $key Gizli anahtar
+     *
      * @return string Hex formatında hash değeri
      */
     public static function hmacSha256(string $data, string $key): string
@@ -30,7 +31,8 @@ class HashGenerator
      * HMAC-SHA512 hash oluşturur.
      *
      * @param string $data İmzalanacak veri
-     * @param string $key  Gizli anahtar
+     * @param string $key Gizli anahtar
+     *
      * @return string Hex formatında hash değeri
      */
     public static function hmacSha512(string $data, string $key): string
@@ -44,7 +46,8 @@ class HashGenerator
      * PayTR gibi Base64 kodlanmış hash isteyen altyapılar için.
      *
      * @param string $data İmzalanacak veri
-     * @param string $key  Gizli anahtar
+     * @param string $key Gizli anahtar
+     *
      * @return string Base64 kodlanmış hash değeri
      */
     public static function hmacSha256Base64(string $data, string $key): string
@@ -56,6 +59,7 @@ class HashGenerator
      * SHA256 hash oluşturur (anahtarsız).
      *
      * @param string $data Hash'lenecek veri
+     *
      * @return string Hex formatında hash değeri
      */
     public static function sha256(string $data): string
@@ -69,6 +73,7 @@ class HashGenerator
      * Bazı eski altyapılar SHA1 kullanır.
      *
      * @param string $data Hash'lenecek veri
+     *
      * @return string Hex formatında hash değeri
      */
     public static function sha1(string $data): string
@@ -80,6 +85,7 @@ class HashGenerator
      * Base64 kodlama yapar.
      *
      * @param string $data Kodlanacak veri
+     *
      * @return string Base64 kodlanmış değer
      */
     public static function base64Encode(string $data): string
@@ -91,12 +97,13 @@ class HashGenerator
      * Base64 kodlamasını çözer.
      *
      * @param string $data Çözümlenecek veri
+     *
      * @return string Çözümlenmiş değer
      */
     public static function base64Decode(string $data): string
     {
         $decoded = base64_decode($data, true);
 
-        return $decoded !== false ? $decoded : '';
+        return false !== $decoded ? $decoded : '';
     }
 }

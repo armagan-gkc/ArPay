@@ -24,6 +24,7 @@ class MoneyFormatter
      * Örnek: 150.00 → 15000, 99.90 → 9990
      *
      * @param float $amount TL cinsinden tutar
+     *
      * @return int Kuruş cinsinden tutar
      */
     public static function toPenny(float $amount): int
@@ -37,6 +38,7 @@ class MoneyFormatter
      * Örnek: 15000 → "150.00", 9990 → "99.90"
      *
      * @param int $penny Kuruş cinsinden tutar
+     *
      * @return string Ondalıklı TL tutarı
      */
     public static function toDecimal(int $penny): string
@@ -50,6 +52,7 @@ class MoneyFormatter
      * Örnek: 150.0 → "150.00", 99.9 → "99.90"
      *
      * @param float $amount TL cinsinden tutar
+     *
      * @return string 2 ondalıklı string tutar
      */
     public static function toDecimalString(float $amount): string
@@ -64,6 +67,7 @@ class MoneyFormatter
      * String verilirse doğrudan float'a cast eder.
      *
      * @param int|string $amount Kuruş (int) veya string tutar değeri
+     *
      * @return float Float tutar
      */
     public static function toFloat(int|string $amount): float

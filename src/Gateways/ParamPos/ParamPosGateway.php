@@ -64,44 +64,29 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
         return ['pay', 'payInstallment', 'refund', 'query', '3dsecure', 'subscription', 'installmentQuery'];
     }
 
-    protected function getRequiredConfigKeys(): array
-    {
-        return ['client_code', 'client_username', 'client_password', 'guid'];
-    }
-
-    protected function getBaseUrl(): string
-    {
-        return self::LIVE_BASE_URL;
-    }
-
-    protected function getTestBaseUrl(): string
-    {
-        return self::SANDBOX_BASE_URL;
-    }
-
     public function pay(PaymentRequest $request): PaymentResponse
     {
         $card = $request->getCard();
-        if ($card === null) {
+        if (null === $card) {
             return PaymentResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
         }
 
         $body = [
-            'CLIENT_CODE'     => $this->config->get('client_code'),
+            'CLIENT_CODE' => $this->config->get('client_code'),
             'CLIENT_USERNAME' => $this->config->get('client_username'),
             'CLIENT_PASSWORD' => $this->config->get('client_password'),
-            'GUID'            => $this->config->get('guid'),
-            'KK_Sahibi'      => $card->cardHolderName,
-            'KK_No'          => $card->cardNumber,
-            'KK_SK_Ay'       => $card->expireMonth,
-            'KK_SK_Yil'      => $card->expireYear,
-            'KK_CVC'         => $card->cvv,
-            'Tutar'          => MoneyFormatter::toDecimalString($request->getAmount()),
-            'Doviz_Kodu'     => $this->mapCurrency($request->getCurrency()),
-            'Siparis_ID'     => $request->getOrderId(),
-            'Taksit'         => (string) $request->getInstallmentCount(),
-            'Islem_Tutar'    => MoneyFormatter::toDecimalString($request->getAmount()),
-            'IPAdr'          => $request->getCustomer()?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
+            'GUID' => $this->config->get('guid'),
+            'KK_Sahibi' => $card->cardHolderName,
+            'KK_No' => $card->cardNumber,
+            'KK_SK_Ay' => $card->expireMonth,
+            'KK_SK_Yil' => $card->expireYear,
+            'KK_CVC' => $card->cvv,
+            'Tutar' => MoneyFormatter::toDecimalString($request->getAmount()),
+            'Doviz_Kodu' => $this->mapCurrency($request->getCurrency()),
+            'Siparis_ID' => $request->getOrderId(),
+            'Taksit' => (string) $request->getInstallmentCount(),
+            'Islem_Tutar' => MoneyFormatter::toDecimalString($request->getAmount()),
+            'IPAdr' => $request->getCustomer()?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
         ];
 
         $response = $this->httpClient->post(
@@ -135,12 +120,12 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
     public function refund(RefundRequest $request): RefundResponse
     {
         $body = [
-            'CLIENT_CODE'     => $this->config->get('client_code'),
+            'CLIENT_CODE' => $this->config->get('client_code'),
             'CLIENT_USERNAME' => $this->config->get('client_username'),
             'CLIENT_PASSWORD' => $this->config->get('client_password'),
-            'GUID'            => $this->config->get('guid'),
-            'Dekont_ID'       => $request->getTransactionId() ?: $request->getOrderId(),
-            'Tutar'           => MoneyFormatter::toDecimalString($request->getAmount()),
+            'GUID' => $this->config->get('guid'),
+            'Dekont_ID' => $request->getTransactionId() ?: $request->getOrderId(),
+            'Tutar' => MoneyFormatter::toDecimalString($request->getAmount()),
         ];
 
         $response = $this->httpClient->post(
@@ -168,11 +153,11 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
     public function query(QueryRequest $request): QueryResponse
     {
         $body = [
-            'CLIENT_CODE'     => $this->config->get('client_code'),
+            'CLIENT_CODE' => $this->config->get('client_code'),
             'CLIENT_USERNAME' => $this->config->get('client_username'),
             'CLIENT_PASSWORD' => $this->config->get('client_password'),
-            'GUID'            => $this->config->get('guid'),
-            'Dekont_ID'       => $request->getTransactionId() ?: $request->getOrderId(),
+            'GUID' => $this->config->get('guid'),
+            'Dekont_ID' => $request->getTransactionId() ?: $request->getOrderId(),
         ];
 
         $response = $this->httpClient->post(
@@ -202,26 +187,26 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
     public function initSecurePayment(SecurePaymentRequest $request): SecureInitResponse
     {
         $card = $request->getCard();
-        if ($card === null) {
+        if (null === $card) {
             return SecureInitResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
         }
 
         $body = [
-            'CLIENT_CODE'     => $this->config->get('client_code'),
+            'CLIENT_CODE' => $this->config->get('client_code'),
             'CLIENT_USERNAME' => $this->config->get('client_username'),
             'CLIENT_PASSWORD' => $this->config->get('client_password'),
-            'GUID'            => $this->config->get('guid'),
-            'KK_Sahibi'      => $card->cardHolderName,
-            'KK_No'          => $card->cardNumber,
-            'KK_SK_Ay'       => $card->expireMonth,
-            'KK_SK_Yil'      => $card->expireYear,
-            'KK_CVC'         => $card->cvv,
-            'Tutar'          => MoneyFormatter::toDecimalString($request->getAmount()),
-            'Doviz_Kodu'     => $this->mapCurrency($request->getCurrency()),
-            'Siparis_ID'     => $request->getOrderId(),
-            'Taksit'         => (string) $request->getInstallmentCount(),
-            'Basarili_URL'   => $request->getSuccessUrl() ?: $request->getCallbackUrl(),
-            'Hata_URL'       => $request->getFailUrl() ?: $request->getCallbackUrl(),
+            'GUID' => $this->config->get('guid'),
+            'KK_Sahibi' => $card->cardHolderName,
+            'KK_No' => $card->cardNumber,
+            'KK_SK_Ay' => $card->expireMonth,
+            'KK_SK_Yil' => $card->expireYear,
+            'KK_CVC' => $card->cvv,
+            'Tutar' => MoneyFormatter::toDecimalString($request->getAmount()),
+            'Doviz_Kodu' => $this->mapCurrency($request->getCurrency()),
+            'Siparis_ID' => $request->getOrderId(),
+            'Taksit' => (string) $request->getInstallmentCount(),
+            'Basarili_URL' => $request->getSuccessUrl() ?: $request->getCallbackUrl(),
+            'Hata_URL' => $request->getFailUrl() ?: $request->getCallbackUrl(),
         ];
 
         $response = $this->httpClient->post(
@@ -250,7 +235,7 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
     {
         $sonuc = $data->get('Sonuc', $data->get('mdStatus', ''));
 
-        if ($sonuc === '1' || $sonuc === 1) {
+        if ('1' === $sonuc || 1 === $sonuc) {
             return PaymentResponse::successful(
                 transactionId: (string) $data->get('Dekont_ID', $data->get('transaction_id', '')),
                 orderId: (string) $data->get('Siparis_ID', $data->get('order_id', '')),
@@ -269,22 +254,22 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
     public function createSubscription(SubscriptionRequest $request): SubscriptionResponse
     {
         $card = $request->getCard();
-        if ($card === null) {
+        if (null === $card) {
             return SubscriptionResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
         }
 
         $body = [
-            'CLIENT_CODE'     => $this->config->get('client_code'),
+            'CLIENT_CODE' => $this->config->get('client_code'),
             'CLIENT_USERNAME' => $this->config->get('client_username'),
             'CLIENT_PASSWORD' => $this->config->get('client_password'),
-            'GUID'            => $this->config->get('guid'),
-            'Plan_Adi'        => $request->getPlanName(),
-            'Tutar'           => MoneyFormatter::toDecimalString($request->getAmount()),
-            'Periyot'         => $request->getPeriod(),
-            'KK_No'           => $card->cardNumber,
-            'KK_SK_Ay'        => $card->expireMonth,
-            'KK_SK_Yil'       => $card->expireYear,
-            'KK_CVC'          => $card->cvv,
+            'GUID' => $this->config->get('guid'),
+            'Plan_Adi' => $request->getPlanName(),
+            'Tutar' => MoneyFormatter::toDecimalString($request->getAmount()),
+            'Periyot' => $request->getPeriod(),
+            'KK_No' => $card->cardNumber,
+            'KK_SK_Ay' => $card->expireMonth,
+            'KK_SK_Yil' => $card->expireYear,
+            'KK_CVC' => $card->cvv,
         ];
 
         $response = $this->httpClient->post(
@@ -311,10 +296,10 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
     public function cancelSubscription(string $subscriptionId): SubscriptionResponse
     {
         $body = [
-            'CLIENT_CODE'     => $this->config->get('client_code'),
+            'CLIENT_CODE' => $this->config->get('client_code'),
             'CLIENT_USERNAME' => $this->config->get('client_username'),
             'CLIENT_PASSWORD' => $this->config->get('client_password'),
-            'GUID'            => $this->config->get('guid'),
+            'GUID' => $this->config->get('guid'),
             'subscription_id' => $subscriptionId,
         ];
 
@@ -339,12 +324,12 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
     public function queryInstallments(string $binNumber, float $amount): array
     {
         $body = [
-            'CLIENT_CODE'     => $this->config->get('client_code'),
+            'CLIENT_CODE' => $this->config->get('client_code'),
             'CLIENT_USERNAME' => $this->config->get('client_username'),
             'CLIENT_PASSWORD' => $this->config->get('client_password'),
-            'GUID'            => $this->config->get('guid'),
-            'BIN'             => $binNumber,
-            'Tutar'           => MoneyFormatter::toDecimalString($amount),
+            'GUID' => $this->config->get('guid'),
+            'BIN' => $binNumber,
+            'Tutar' => MoneyFormatter::toDecimalString($amount),
         ];
 
         $response = $this->httpClient->post(
@@ -368,6 +353,21 @@ class ParamPosGateway extends AbstractGateway implements PayableInterface, Refun
         }
 
         return $installments;
+    }
+
+    protected function getRequiredConfigKeys(): array
+    {
+        return ['client_code', 'client_username', 'client_password', 'guid'];
+    }
+
+    protected function getBaseUrl(): string
+    {
+        return self::LIVE_BASE_URL;
+    }
+
+    protected function getTestBaseUrl(): string
+    {
+        return self::SANDBOX_BASE_URL;
     }
 
     /**

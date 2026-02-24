@@ -14,6 +14,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Iyzico Gateway birim testleri (sahte HTTP istemci ile).
+ *
+ * @internal
+ *
+ * @coversNothing
  */
 class IyzicoGatewayTest extends TestCase
 {
@@ -26,9 +30,9 @@ class IyzicoGatewayTest extends TestCase
         $this->httpClient = new MockHttpClient();
 
         $this->gateway->configure(new Config([
-            'api_key'    => 'test_api_key',
+            'api_key' => 'test_api_key',
             'secret_key' => 'test_secret_key',
-            'test_mode'  => true,
+            'test_mode' => true,
         ]));
         $this->gateway->setHttpClient($this->httpClient);
     }
@@ -42,10 +46,10 @@ class IyzicoGatewayTest extends TestCase
     public function test_successful_payment(): void
     {
         $this->httpClient->addResponse(200, [
-            'status'        => 'success',
-            'paymentId'     => 'IYZ-001',
+            'status' => 'success',
+            'paymentId' => 'IYZ-001',
             'conversationId' => 'ORDER-001',
-            'price'         => '150.00',
+            'price' => '150.00',
         ]);
 
         $request = PaymentRequest::create()
@@ -76,8 +80,8 @@ class IyzicoGatewayTest extends TestCase
     public function test_failed_payment(): void
     {
         $this->httpClient->addResponse(200, [
-            'status'       => 'failure',
-            'errorCode'    => '12',
+            'status' => 'failure',
+            'errorCode' => '12',
             'errorMessage' => 'Yetersiz bakiye.',
         ]);
 
@@ -133,7 +137,7 @@ class IyzicoGatewayTest extends TestCase
                     firstName: 'Test',
                     lastName: 'User',
                     email: 'test@example.com',
-                ))
+                )),
         );
 
         $lastRequest = $this->httpClient->getLastRequest();

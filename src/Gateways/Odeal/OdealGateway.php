@@ -58,71 +58,35 @@ class OdealGateway extends AbstractGateway implements PayableInterface, Refundab
         return ['pay', 'payInstallment', 'refund', 'query', '3dsecure'];
     }
 
-    protected function getRequiredConfigKeys(): array
-    {
-        return ['api_key', 'secret_key'];
-    }
-
-    protected function getBaseUrl(): string
-    {
-        return self::LIVE_BASE_URL;
-    }
-
-    protected function getTestBaseUrl(): string
-    {
-        return self::SANDBOX_BASE_URL;
-    }
-
-    /**
-     * Ödeal API istekleri için standart başlıkları oluşturur.
-     */
-    private function buildHeaders(): array
-    {
-        return [
-            'Content-Type'  => 'application/json',
-            'Authorization' => 'Bearer ' . $this->config->get('api_key'),
-            'X-Api-Key'     => $this->config->get('api_key'),
-        ];
-    }
-
-    /**
-     * Ödeal imza doğrulaması için hash oluşturur.
-     */
-    private function generateSignature(array $params): string
-    {
-        $hashString = implode('', $params) . $this->config->get('secret_key');
-        return HashGenerator::sha256($hashString);
-    }
-
     public function pay(PaymentRequest $request): PaymentResponse
     {
         $card = $request->getCard();
-        if ($card === null) {
+        if (null === $card) {
             return PaymentResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
         }
 
         $customer = $request->getCustomer();
 
         $body = [
-            'amount'       => MoneyFormatter::toDecimalString($request->getAmount()),
-            'currency'     => $request->getCurrency(),
-            'orderId'      => $request->getOrderId(),
-            'description'  => $request->getDescription(),
-            'installment'  => $request->getInstallmentCount(),
-            'card'         => [
+            'amount' => MoneyFormatter::toDecimalString($request->getAmount()),
+            'currency' => $request->getCurrency(),
+            'orderId' => $request->getOrderId(),
+            'description' => $request->getDescription(),
+            'installment' => $request->getInstallmentCount(),
+            'card' => [
                 'holderName' => $card->cardHolderName,
-                'number'     => $card->cardNumber,
-                'expMonth'   => $card->expireMonth,
-                'expYear'    => $card->expireYear,
-                'cvv'        => $card->cvv,
+                'number' => $card->cardNumber,
+                'expMonth' => $card->expireMonth,
+                'expYear' => $card->expireYear,
+                'cvv' => $card->cvv,
             ],
-            'buyer'        => [
-                'name'    => $customer?->firstName ?? '',
+            'buyer' => [
+                'name' => $customer?->firstName ?? '',
                 'surname' => $customer?->lastName ?? '',
-                'email'   => $customer?->email ?? '',
-                'ip'      => $customer?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
+                'email' => $customer?->email ?? '',
+                'ip' => $customer?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
             ],
-            'signature'    => $this->generateSignature([
+            'signature' => $this->generateSignature([
                 $request->getOrderId(),
                 MoneyFormatter::toDecimalString($request->getAmount()),
                 $request->getCurrency(),
@@ -161,10 +125,10 @@ class OdealGateway extends AbstractGateway implements PayableInterface, Refundab
     {
         $body = [
             'transactionId' => $request->getTransactionId(),
-            'orderId'       => $request->getOrderId(),
-            'amount'        => MoneyFormatter::toDecimalString($request->getAmount()),
-            'reason'        => $request->getReason(),
-            'signature'     => $this->generateSignature([
+            'orderId' => $request->getOrderId(),
+            'amount' => MoneyFormatter::toDecimalString($request->getAmount()),
+            'reason' => $request->getReason(),
+            'signature' => $this->generateSignature([
                 $request->getTransactionId() ?: $request->getOrderId(),
                 MoneyFormatter::toDecimalString($request->getAmount()),
             ]),
@@ -196,7 +160,7 @@ class OdealGateway extends AbstractGateway implements PayableInterface, Refundab
     {
         $body = [
             'transactionId' => $request->getTransactionId(),
-            'orderId'       => $request->getOrderId(),
+            'orderId' => $request->getOrderId(),
         ];
 
         $response = $this->httpClient->post(
@@ -209,11 +173,11 @@ class OdealGateway extends AbstractGateway implements PayableInterface, Refundab
         if (($data['status'] ?? '') === 'success') {
             $paymentStatus = match ($data['paymentStatus'] ?? '') {
                 'approved', 'captured' => PaymentStatus::Successful,
-                'declined', 'error'    => PaymentStatus::Failed,
-                'pending'              => PaymentStatus::Pending,
-                'refunded'             => PaymentStatus::Refunded,
-                'cancelled'            => PaymentStatus::Cancelled,
-                default                => PaymentStatus::Pending,
+                'declined', 'error' => PaymentStatus::Failed,
+                'pending' => PaymentStatus::Pending,
+                'refunded' => PaymentStatus::Refunded,
+                'cancelled' => PaymentStatus::Cancelled,
+                default => PaymentStatus::Pending,
             };
 
             return QueryResponse::successful(
@@ -235,34 +199,34 @@ class OdealGateway extends AbstractGateway implements PayableInterface, Refundab
     public function initSecurePayment(SecurePaymentRequest $request): SecureInitResponse
     {
         $card = $request->getCard();
-        if ($card === null) {
+        if (null === $card) {
             return SecureInitResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
         }
 
         $customer = $request->getCustomer();
 
         $body = [
-            'amount'       => MoneyFormatter::toDecimalString($request->getAmount()),
-            'currency'     => $request->getCurrency(),
-            'orderId'      => $request->getOrderId(),
-            'description'  => $request->getDescription(),
-            'installment'  => $request->getInstallmentCount(),
-            'callbackUrl'  => $request->getSuccessUrl() ?: $request->getCallbackUrl(),
-            'failUrl'      => $request->getFailUrl() ?: $request->getCallbackUrl(),
-            'card'         => [
+            'amount' => MoneyFormatter::toDecimalString($request->getAmount()),
+            'currency' => $request->getCurrency(),
+            'orderId' => $request->getOrderId(),
+            'description' => $request->getDescription(),
+            'installment' => $request->getInstallmentCount(),
+            'callbackUrl' => $request->getSuccessUrl() ?: $request->getCallbackUrl(),
+            'failUrl' => $request->getFailUrl() ?: $request->getCallbackUrl(),
+            'card' => [
                 'holderName' => $card->cardHolderName,
-                'number'     => $card->cardNumber,
-                'expMonth'   => $card->expireMonth,
-                'expYear'    => $card->expireYear,
-                'cvv'        => $card->cvv,
+                'number' => $card->cardNumber,
+                'expMonth' => $card->expireMonth,
+                'expYear' => $card->expireYear,
+                'cvv' => $card->cvv,
             ],
-            'buyer'        => [
-                'name'    => $customer?->firstName ?? '',
+            'buyer' => [
+                'name' => $customer?->firstName ?? '',
                 'surname' => $customer?->lastName ?? '',
-                'email'   => $customer?->email ?? '',
-                'ip'      => $customer?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
+                'email' => $customer?->email ?? '',
+                'ip' => $customer?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
             ],
-            'signature'    => $this->generateSignature([
+            'signature' => $this->generateSignature([
                 $request->getOrderId(),
                 MoneyFormatter::toDecimalString($request->getAmount()),
                 $request->getCurrency(),
@@ -278,7 +242,7 @@ class OdealGateway extends AbstractGateway implements PayableInterface, Refundab
 
         if (isset($data['threeDSecureHtml'])) {
             return SecureInitResponse::html(
-                base64_decode($data['threeDSecureHtml']),
+                base64_decode($data['threeDSecureHtml'], true),
                 $data,
             );
         }
@@ -298,10 +262,10 @@ class OdealGateway extends AbstractGateway implements PayableInterface, Refundab
     {
         $status = $data->get('status', $data->get('mdStatus', ''));
 
-        if ($status === 'success' || $status === '1') {
+        if ('success' === $status || '1' === $status) {
             $body = [
                 'paymentToken' => $data->get('paymentToken', ''),
-                'orderId'      => $data->get('orderId', ''),
+                'orderId' => $data->get('orderId', ''),
             ];
 
             $response = $this->httpClient->post(
@@ -332,5 +296,42 @@ class OdealGateway extends AbstractGateway implements PayableInterface, Refundab
             errorMessage: (string) $data->get('errorMessage', 'Ödeal 3D Secure doğrulama başarısız.'),
             rawResponse: $data->toArray(),
         );
+    }
+
+    protected function getRequiredConfigKeys(): array
+    {
+        return ['api_key', 'secret_key'];
+    }
+
+    protected function getBaseUrl(): string
+    {
+        return self::LIVE_BASE_URL;
+    }
+
+    protected function getTestBaseUrl(): string
+    {
+        return self::SANDBOX_BASE_URL;
+    }
+
+    /**
+     * Ödeal API istekleri için standart başlıkları oluşturur.
+     */
+    private function buildHeaders(): array
+    {
+        return [
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $this->config->get('api_key'),
+            'X-Api-Key' => $this->config->get('api_key'),
+        ];
+    }
+
+    /**
+     * Ödeal imza doğrulaması için hash oluşturur.
+     */
+    private function generateSignature(array $params): string
+    {
+        $hashString = implode('', $params) . $this->config->get('secret_key');
+
+        return HashGenerator::sha256($hashString);
     }
 }

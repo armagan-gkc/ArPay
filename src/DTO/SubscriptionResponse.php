@@ -20,8 +20,7 @@ class SubscriptionResponse implements \JsonSerializable
         protected readonly string $errorCode = '',
         protected readonly string $errorMessage = '',
         protected readonly array $rawResponse = [],
-    ) {
-    }
+    ) {}
 
     /**
      * Başarılı abonelik yanıtı oluşturur.
@@ -96,12 +95,12 @@ class SubscriptionResponse implements \JsonSerializable
     public function toArray(): array
     {
         return [
-            'successful'      => $this->successful,
+            'successful' => $this->successful,
             'subscription_id' => $this->subscriptionId,
-            'status'          => $this->status,
-            'error_code'      => $this->errorCode,
-            'error_message'   => $this->errorMessage,
-            'raw_response'    => $this->rawResponse,
+            'status' => $this->status,
+            'error_code' => $this->errorCode,
+            'error_message' => $this->errorMessage,
+            'raw_response' => $this->rawResponse,
         ];
     }
 

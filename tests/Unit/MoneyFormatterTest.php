@@ -9,6 +9,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * MoneyFormatter birim testleri.
+ *
+ * @internal
+ *
+ * @coversNothing
  */
 class MoneyFormatterTest extends TestCase
 {

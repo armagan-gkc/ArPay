@@ -8,8 +8,8 @@ use Arpay\DTO\CartItem;
 use Arpay\DTO\CreditCard;
 use Arpay\DTO\Customer;
 use Arpay\DTO\PaymentRequest;
-use Arpay\DTO\RefundRequest;
 use Arpay\DTO\QueryRequest;
+use Arpay\DTO\RefundRequest;
 use Arpay\Gateways\PayTR\PayTRGateway;
 use Arpay\Support\Config;
 use Arpay\Tests\Support\MockHttpClient;
@@ -17,6 +17,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * PayTR Gateway birim testleri (sahte HTTP istemci ile).
+ *
+ * @internal
+ *
+ * @coversNothing
  */
 class PayTRGatewayTest extends TestCase
 {
@@ -29,10 +33,10 @@ class PayTRGatewayTest extends TestCase
         $this->httpClient = new MockHttpClient();
 
         $this->gateway->configure(new Config([
-            'merchant_id'   => 'TEST_MID',
-            'merchant_key'  => 'TEST_KEY',
+            'merchant_id' => 'TEST_MID',
+            'merchant_key' => 'TEST_KEY',
             'merchant_salt' => 'TEST_SALT',
-            'test_mode'     => true,
+            'test_mode' => true,
         ]));
         $this->gateway->setHttpClient($this->httpClient);
     }
@@ -54,7 +58,7 @@ class PayTRGatewayTest extends TestCase
     public function test_successful_payment(): void
     {
         $this->httpClient->addResponse(200, [
-            'status'  => 'success',
+            'status' => 'success',
             'trans_id' => 'TXN-12345',
         ]);
 
@@ -94,8 +98,8 @@ class PayTRGatewayTest extends TestCase
     public function test_failed_payment(): void
     {
         $this->httpClient->addResponse(200, [
-            'status'  => 'failed',
-            'err_no'  => 'DECLINED',
+            'status' => 'failed',
+            'err_no' => 'DECLINED',
             'err_msg' => 'Kart reddedildi.',
         ]);
 
@@ -130,7 +134,7 @@ class PayTRGatewayTest extends TestCase
     public function test_successful_refund(): void
     {
         $this->httpClient->addResponse(200, [
-            'status'  => 'success',
+            'status' => 'success',
             'trans_id' => 'REFUND-001',
         ]);
 
@@ -148,10 +152,10 @@ class PayTRGatewayTest extends TestCase
     public function test_successful_query(): void
     {
         $this->httpClient->addResponse(200, [
-            'status'      => 'success',
-            'trans_id'    => 'TXN-12345',
-            'order_id'    => 'ORDER-001',
-            'amount'      => 15000,
+            'status' => 'success',
+            'trans_id' => 'TXN-12345',
+            'order_id' => 'ORDER-001',
+            'amount' => 15000,
             'trans_status' => 'approved',
         ]);
 
@@ -178,12 +182,12 @@ class PayTRGatewayTest extends TestCase
                     expireMonth: '12',
                     expireYear: '2030',
                     cvv: '123',
-                ))
+                )),
         );
 
         $lastRequest = $this->httpClient->getLastRequest();
         $this->assertNotNull($lastRequest);
-        /* Test modunda sandbox URL kullanılmalı */
+        // Test modunda sandbox URL kullanılmalı
         $this->assertStringContainsString('test.paytr.com', $lastRequest['url']);
     }
 }

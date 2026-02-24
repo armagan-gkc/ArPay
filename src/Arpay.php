@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Arpay;
 
 use Arpay\Contracts\GatewayInterface;
+use Arpay\Exceptions\GatewayNotFoundException;
+use Arpay\Exceptions\InvalidParameterException;
 use Arpay\Support\Config;
 
 /**
@@ -34,6 +36,7 @@ use Arpay\Support\Config;
  *
  * @author Armağan Gökce
  * @license MIT
+ *
  * @see https://github.com/armagangokce/arpay
  */
 class Arpay
@@ -50,12 +53,13 @@ class Arpay
      * ve yapılandırma değerlerini vererek kullanıma hazır bir
      * gateway nesnesi elde edersiniz.
      *
-     * @param string               $gateway Gateway kısa adı ('paytr', 'iyzico', 'vepara', vb.)
-     * @param array<string, mixed> $config  API anahtarları ve diğer yapılandırma değerleri
+     * @param string $gateway Gateway kısa adı ('paytr', 'iyzico', 'vepara', vb.)
+     * @param array<string, mixed> $config API anahtarları ve diğer yapılandırma değerleri
+     *
      * @return GatewayInterface Yapılandırılmış gateway nesnesi
      *
-     * @throws \Arpay\Exceptions\GatewayNotFoundException Geçersiz gateway adı
-     * @throws \Arpay\Exceptions\InvalidParameterException Eksik yapılandırma
+     * @throws GatewayNotFoundException Geçersiz gateway adı
+     * @throws InvalidParameterException Eksik yapılandırma
      */
     public static function create(string $gateway, array $config = []): GatewayInterface
     {

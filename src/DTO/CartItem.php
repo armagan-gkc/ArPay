@@ -20,8 +20,7 @@ class CartItem
         public readonly string $category,
         public readonly float $price,
         public readonly int $quantity = 1,
-    ) {
-    }
+    ) {}
 
     /**
      * Yeni sepet ürünü oluşturur.

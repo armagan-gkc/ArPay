@@ -26,8 +26,7 @@ class SecureCallbackData
      */
     public function __construct(
         protected readonly array $data,
-    ) {
-    }
+    ) {}
 
     /**
      * POST verilerinden callback nesnesi oluşturur.
@@ -54,8 +53,8 @@ class SecureCallbackData
     /**
      * Belirli bir callback değerini döndürür.
      *
-     * @param string $key     Anahtar adı
-     * @param mixed  $default Varsayılan değer
+     * @param string $key Anahtar adı
+     * @param mixed $default Varsayılan değer
      */
     public function get(string $key, mixed $default = null): mixed
     {

@@ -24,8 +24,7 @@ class QueryResponse implements \JsonSerializable
         protected readonly string $errorCode = '',
         protected readonly string $errorMessage = '',
         protected readonly array $rawResponse = [],
-    ) {
-    }
+    ) {}
 
     /**
      * Başarılı sorgu yanıtı oluşturur.
@@ -114,14 +113,14 @@ class QueryResponse implements \JsonSerializable
     public function toArray(): array
     {
         return [
-            'successful'     => $this->successful,
+            'successful' => $this->successful,
             'transaction_id' => $this->transactionId,
-            'order_id'       => $this->orderId,
-            'amount'         => $this->amount,
-            'status'         => $this->status->value,
-            'error_code'     => $this->errorCode,
-            'error_message'  => $this->errorMessage,
-            'raw_response'   => $this->rawResponse,
+            'order_id' => $this->orderId,
+            'amount' => $this->amount,
+            'status' => $this->status->value,
+            'error_code' => $this->errorCode,
+            'error_message' => $this->errorMessage,
+            'raw_response' => $this->rawResponse,
         ];
     }
 

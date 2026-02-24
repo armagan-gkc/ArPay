@@ -17,14 +17,14 @@ use Arpay\Enums\PaymentStatus;
 class PaymentResponse implements \JsonSerializable
 {
     /**
-     * @param bool          $successful    Ödeme başarılı mı?
-     * @param string        $transactionId Gateway'in döndürdüğü işlem numarası
-     * @param string        $orderId       Sipariş numarası
-     * @param float         $amount        Ödenen tutar
-     * @param PaymentStatus $status        Ödeme durumu
-     * @param string        $errorCode     Hata kodu (başarısızsa)
-     * @param string        $errorMessage  Hata mesajı (başarısızsa)
-     * @param array         $rawResponse   Gateway'den gelen ham yanıt
+     * @param bool $successful Ödeme başarılı mı?
+     * @param string $transactionId Gateway'in döndürdüğü işlem numarası
+     * @param string $orderId Sipariş numarası
+     * @param float $amount Ödenen tutar
+     * @param PaymentStatus $status Ödeme durumu
+     * @param string $errorCode Hata kodu (başarısızsa)
+     * @param string $errorMessage Hata mesajı (başarısızsa)
+     * @param array $rawResponse Gateway'den gelen ham yanıt
      */
     public function __construct(
         protected readonly bool $successful,
@@ -35,8 +35,7 @@ class PaymentResponse implements \JsonSerializable
         protected readonly string $errorCode = '',
         protected readonly string $errorMessage = '',
         protected readonly array $rawResponse = [],
-    ) {
-    }
+    ) {}
 
     /**
      * Başarılı ödeme yanıtı oluşturur.
@@ -148,14 +147,14 @@ class PaymentResponse implements \JsonSerializable
     public function toArray(): array
     {
         return [
-            'successful'     => $this->successful,
+            'successful' => $this->successful,
             'transaction_id' => $this->transactionId,
-            'order_id'       => $this->orderId,
-            'amount'         => $this->amount,
-            'status'         => $this->status->value,
-            'error_code'     => $this->errorCode,
-            'error_message'  => $this->errorMessage,
-            'raw_response'   => $this->rawResponse,
+            'order_id' => $this->orderId,
+            'amount' => $this->amount,
+            'status' => $this->status->value,
+            'error_code' => $this->errorCode,
+            'error_message' => $this->errorMessage,
+            'raw_response' => $this->rawResponse,
         ];
     }
 

@@ -26,8 +26,9 @@ class PayTRHelper
      *            + user_basket + no_installment + max_installment + currency + test_mode
      * token = base64( hmac_sha256( hash_str, merchant_key + merchant_salt ) )
      *
-     * @param array<string, mixed> $params  Token parametreleri
-     * @param Config               $config  Gateway yapılandırması
+     * @param array<string, mixed> $params Token parametreleri
+     * @param Config $config Gateway yapılandırması
+     *
      * @return string Base64 kodlanmış HMAC token
      */
     public static function generateToken(array $params, Config $config): string
@@ -54,8 +55,9 @@ class PayTRHelper
      * PayTR iade token'ı oluşturur.
      *
      * @param string $merchantOid Sipariş numarası
-     * @param int    $amount      İade tutarı (kuruş)
-     * @param Config $config      Gateway yapılandırması
+     * @param int $amount İade tutarı (kuruş)
+     * @param Config $config Gateway yapılandırması
+     *
      * @return string Base64 kodlanmış HMAC token
      */
     public static function generateRefundToken(string $merchantOid, int $amount, Config $config): string
@@ -77,6 +79,7 @@ class PayTRHelper
      * Örnek: 150.00 TL → 15000
      *
      * @param float $amount TL cinsinden tutar
+     *
      * @return int Kuruş cinsinden tutar
      */
     public static function formatAmount(float $amount): int
@@ -90,6 +93,7 @@ class PayTRHelper
      * PayTR basket formatı: base64(json_encode([["Ürün Adı", "Fiyat", Adet], ...]))
      *
      * @param array<int, array{name: string, price: float, quantity: int}> $items
+     *
      * @return string Base64 kodlanmış JSON sepet
      */
     public static function formatBasket(array $items): string
@@ -104,7 +108,7 @@ class PayTRHelper
             ];
         }
 
-        /* Sepet boşsa varsayılan ürün ekle */
+        // Sepet boşsa varsayılan ürün ekle
         if (empty($basket)) {
             $basket[] = ['Ödeme', '0', 1];
         }
@@ -115,12 +119,13 @@ class PayTRHelper
     /**
      * PayTR callback hash doğrulaması yapar.
      *
-     * @param string $merchantOid   Sipariş numarası
-     * @param string $merchantSalt  Merchant salt
-     * @param string $merchantKey   Merchant key
-     * @param string $status        Ödeme durumu ('success' veya 'failed')
-     * @param string $totalAmount   Toplam tutar (kuruş string)
-     * @param string $expectedHash  Beklenen hash değeri
+     * @param string $merchantOid Sipariş numarası
+     * @param string $merchantSalt Merchant salt
+     * @param string $merchantKey Merchant key
+     * @param string $status Ödeme durumu ('success' veya 'failed')
+     * @param string $totalAmount Toplam tutar (kuruş string)
+     * @param string $expectedHash Beklenen hash değeri
+     *
      * @return bool Hash doğrulama sonucu
      */
     public static function verifyCallback(

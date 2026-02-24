@@ -65,69 +65,32 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
         return ['pay', 'payInstallment', 'refund', 'query', '3dsecure', 'subscription', 'installmentQuery'];
     }
 
-    protected function getRequiredConfigKeys(): array
-    {
-        return ['secret_key', 'merchant_id'];
-    }
-
-    protected function getBaseUrl(): string
-    {
-        return self::LIVE_BASE_URL;
-    }
-
-    protected function getTestBaseUrl(): string
-    {
-        return self::SANDBOX_BASE_URL;
-    }
-
-    /**
-     * Paynet API istekleri için standart başlıkları oluşturur.
-     */
-    private function buildHeaders(): array
-    {
-        return [
-            'Content-Type'  => 'application/json',
-            'Authorization' => 'Basic ' . base64_encode(
-                $this->config->get('merchant_id') . ':' . $this->config->get('secret_key')
-            ),
-        ];
-    }
-
-    /**
-     * İstek parametrelerinden güvenlik hash'i oluşturur.
-     */
-    private function generateHash(string ...$params): string
-    {
-        $hashStr = implode('', $params) . $this->config->get('secret_key');
-        return HashGenerator::sha256($hashStr);
-    }
-
     public function pay(PaymentRequest $request): PaymentResponse
     {
         $card = $request->getCard();
-        if ($card === null) {
+        if (null === $card) {
             return PaymentResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
         }
 
         $customer = $request->getCustomer();
 
         $body = [
-            'merchant_id'   => $this->config->get('merchant_id'),
-            'amount'        => MoneyFormatter::toPenny($request->getAmount()),
-            'currency'      => $request->getCurrency(),
-            'order_id'      => $request->getOrderId(),
-            'description'   => $request->getDescription(),
-            'installment'   => $request->getInstallmentCount(),
-            'card_holder'   => $card->cardHolderName,
-            'card_no'       => $card->cardNumber,
+            'merchant_id' => $this->config->get('merchant_id'),
+            'amount' => MoneyFormatter::toPenny($request->getAmount()),
+            'currency' => $request->getCurrency(),
+            'order_id' => $request->getOrderId(),
+            'description' => $request->getDescription(),
+            'installment' => $request->getInstallmentCount(),
+            'card_holder' => $card->cardHolderName,
+            'card_no' => $card->cardNumber,
             'card_exp_month' => $card->expireMonth,
-            'card_exp_year'  => $card->expireYear,
-            'card_cvv'      => $card->cvv,
+            'card_exp_year' => $card->expireYear,
+            'card_cvv' => $card->cvv,
             'customer_name' => $customer?->firstName ?? '',
             'customer_surname' => $customer?->lastName ?? '',
-            'customer_email'   => $customer?->email ?? '',
-            'customer_ip'      => $customer?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
-            'hash'          => $this->generateHash(
+            'customer_email' => $customer?->email ?? '',
+            'customer_ip' => $customer?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
+            'hash' => $this->generateHash(
                 $request->getOrderId(),
                 (string) MoneyFormatter::toPenny($request->getAmount()),
                 $request->getCurrency(),
@@ -138,10 +101,10 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
         $products = [];
         foreach ($request->getCartItems() as $item) {
             $products[] = [
-                'id'       => $item->id,
-                'name'     => $item->name,
+                'id' => $item->id,
+                'name' => $item->name,
                 'category' => $item->category,
-                'price'    => MoneyFormatter::toPenny($item->price),
+                'price' => MoneyFormatter::toPenny($item->price),
                 'quantity' => $item->quantity,
             ];
         }
@@ -180,12 +143,12 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
     public function refund(RefundRequest $request): RefundResponse
     {
         $body = [
-            'merchant_id'    => $this->config->get('merchant_id'),
+            'merchant_id' => $this->config->get('merchant_id'),
             'transaction_id' => $request->getTransactionId(),
-            'order_id'       => $request->getOrderId(),
-            'amount'         => MoneyFormatter::toPenny($request->getAmount()),
-            'reason'         => $request->getReason(),
-            'hash'           => $this->generateHash(
+            'order_id' => $request->getOrderId(),
+            'amount' => MoneyFormatter::toPenny($request->getAmount()),
+            'reason' => $request->getReason(),
+            'hash' => $this->generateHash(
                 $request->getTransactionId() ?: $request->getOrderId(),
                 (string) MoneyFormatter::toPenny($request->getAmount()),
             ),
@@ -216,9 +179,9 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
     public function query(QueryRequest $request): QueryResponse
     {
         $body = [
-            'merchant_id'    => $this->config->get('merchant_id'),
+            'merchant_id' => $this->config->get('merchant_id'),
             'transaction_id' => $request->getTransactionId(),
-            'order_id'       => $request->getOrderId(),
+            'order_id' => $request->getOrderId(),
         ];
 
         $response = $this->httpClient->post(
@@ -231,11 +194,11 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
         if (($data['is_successful'] ?? false) === true) {
             $status = match ($data['payment_status'] ?? '') {
                 'approved', 'captured' => PaymentStatus::Successful,
-                'declined', 'error'    => PaymentStatus::Failed,
-                'pending'              => PaymentStatus::Pending,
-                'refunded'             => PaymentStatus::Refunded,
-                'cancelled'            => PaymentStatus::Cancelled,
-                default                => PaymentStatus::Pending,
+                'declined', 'error' => PaymentStatus::Failed,
+                'pending' => PaymentStatus::Pending,
+                'refunded' => PaymentStatus::Refunded,
+                'cancelled' => PaymentStatus::Cancelled,
+                default => PaymentStatus::Pending,
             };
 
             return QueryResponse::successful(
@@ -257,30 +220,30 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
     public function initSecurePayment(SecurePaymentRequest $request): SecureInitResponse
     {
         $card = $request->getCard();
-        if ($card === null) {
+        if (null === $card) {
             return SecureInitResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
         }
 
         $customer = $request->getCustomer();
 
         $body = [
-            'merchant_id'   => $this->config->get('merchant_id'),
-            'amount'        => MoneyFormatter::toPenny($request->getAmount()),
-            'currency'      => $request->getCurrency(),
-            'order_id'      => $request->getOrderId(),
-            'description'   => $request->getDescription(),
-            'installment'   => $request->getInstallmentCount(),
-            'card_holder'   => $card->cardHolderName,
-            'card_no'       => $card->cardNumber,
+            'merchant_id' => $this->config->get('merchant_id'),
+            'amount' => MoneyFormatter::toPenny($request->getAmount()),
+            'currency' => $request->getCurrency(),
+            'order_id' => $request->getOrderId(),
+            'description' => $request->getDescription(),
+            'installment' => $request->getInstallmentCount(),
+            'card_holder' => $card->cardHolderName,
+            'card_no' => $card->cardNumber,
             'card_exp_month' => $card->expireMonth,
-            'card_exp_year'  => $card->expireYear,
-            'card_cvv'      => $card->cvv,
+            'card_exp_year' => $card->expireYear,
+            'card_cvv' => $card->cvv,
             'customer_name' => $customer?->firstName ?? '',
             'customer_email' => $customer?->email ?? '',
-            'customer_ip'    => $customer?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
-            'success_url'   => $request->getSuccessUrl() ?: $request->getCallbackUrl(),
-            'fail_url'      => $request->getFailUrl() ?: $request->getCallbackUrl(),
-            'hash'          => $this->generateHash(
+            'customer_ip' => $customer?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
+            'success_url' => $request->getSuccessUrl() ?: $request->getCallbackUrl(),
+            'fail_url' => $request->getFailUrl() ?: $request->getCallbackUrl(),
+            'hash' => $this->generateHash(
                 $request->getOrderId(),
                 (string) MoneyFormatter::toPenny($request->getAmount()),
                 $request->getCurrency(),
@@ -313,11 +276,11 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
     {
         $mdStatus = $data->get('md_status', $data->get('mdStatus', ''));
 
-        if ($mdStatus === '1') {
+        if ('1' === $mdStatus) {
             $body = [
-                'merchant_id'    => $this->config->get('merchant_id'),
-                'payment_token'  => $data->get('payment_token', $data->get('token', '')),
-                'order_id'       => $data->get('order_id', ''),
+                'merchant_id' => $this->config->get('merchant_id'),
+                'payment_token' => $data->get('payment_token', $data->get('token', '')),
+                'order_id' => $data->get('order_id', ''),
             ];
 
             $response = $this->httpClient->post(
@@ -353,27 +316,27 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
     public function createSubscription(SubscriptionRequest $request): SubscriptionResponse
     {
         $card = $request->getCard();
-        if ($card === null) {
+        if (null === $card) {
             return SubscriptionResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
         }
 
         $customer = $request->getCustomer();
 
         $body = [
-            'merchant_id'   => $this->config->get('merchant_id'),
-            'plan_name'     => $request->getPlanName(),
-            'amount'        => MoneyFormatter::toPenny($request->getAmount()),
-            'currency'      => $request->getCurrency(),
-            'period'        => $request->getPeriod(),
+            'merchant_id' => $this->config->get('merchant_id'),
+            'plan_name' => $request->getPlanName(),
+            'amount' => MoneyFormatter::toPenny($request->getAmount()),
+            'currency' => $request->getCurrency(),
+            'period' => $request->getPeriod(),
             'period_interval' => $request->getPeriodInterval(),
-            'card_holder'   => $card->cardHolderName,
-            'card_no'       => $card->cardNumber,
+            'card_holder' => $card->cardHolderName,
+            'card_no' => $card->cardNumber,
             'card_exp_month' => $card->expireMonth,
-            'card_exp_year'  => $card->expireYear,
-            'card_cvv'      => $card->cvv,
+            'card_exp_year' => $card->expireYear,
+            'card_cvv' => $card->cvv,
             'customer_name' => $customer?->firstName ?? '',
             'customer_surname' => $customer?->lastName ?? '',
-            'customer_email'   => $customer?->email ?? '',
+            'customer_email' => $customer?->email ?? '',
         ];
 
         $response = $this->httpClient->post(
@@ -400,7 +363,7 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
     public function cancelSubscription(string $subscriptionId): SubscriptionResponse
     {
         $body = [
-            'merchant_id'    => $this->config->get('merchant_id'),
+            'merchant_id' => $this->config->get('merchant_id'),
             'subscription_id' => $subscriptionId,
         ];
 
@@ -426,8 +389,8 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
     {
         $body = [
             'merchant_id' => $this->config->get('merchant_id'),
-            'bin'         => $binNumber,
-            'amount'      => MoneyFormatter::toPenny($amount),
+            'bin' => $binNumber,
+            'amount' => MoneyFormatter::toPenny($amount),
         ];
 
         $response = $this->httpClient->post(
@@ -451,5 +414,43 @@ class PaynetGateway extends AbstractGateway implements PayableInterface, Refunda
         }
 
         return $installments;
+    }
+
+    protected function getRequiredConfigKeys(): array
+    {
+        return ['secret_key', 'merchant_id'];
+    }
+
+    protected function getBaseUrl(): string
+    {
+        return self::LIVE_BASE_URL;
+    }
+
+    protected function getTestBaseUrl(): string
+    {
+        return self::SANDBOX_BASE_URL;
+    }
+
+    /**
+     * Paynet API istekleri için standart başlıkları oluşturur.
+     */
+    private function buildHeaders(): array
+    {
+        return [
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Basic ' . base64_encode(
+                $this->config->get('merchant_id') . ':' . $this->config->get('secret_key'),
+            ),
+        ];
+    }
+
+    /**
+     * İstek parametrelerinden güvenlik hash'i oluşturur.
+     */
+    private function generateHash(string ...$params): string
+    {
+        $hashStr = implode('', $params) . $this->config->get('secret_key');
+
+        return HashGenerator::sha256($hashStr);
     }
 }

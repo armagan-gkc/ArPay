@@ -21,6 +21,7 @@ interface QueryableInterface
      * İşlem durumunu sorgular.
      *
      * @param QueryRequest $request Sorgu istek bilgileri (sipariş no veya işlem no)
+     *
      * @return QueryResponse Sorgu sonucu
      */
     public function query(QueryRequest $request): QueryResponse;

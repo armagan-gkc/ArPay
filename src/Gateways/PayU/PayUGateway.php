@@ -61,6 +61,304 @@ class PayUGateway extends AbstractGateway implements PayableInterface, Refundabl
         return ['pay', 'payInstallment', 'refund', 'query', '3dsecure', 'subscription'];
     }
 
+    public function pay(PaymentRequest $request): PaymentResponse
+    {
+        $card = $request->getCard();
+        if (null === $card) {
+            return PaymentResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
+        }
+
+        $customer = $request->getCustomer();
+        $billingAddress = $request->getBillingAddress();
+        $amount = MoneyFormatter::toDecimalString($request->getAmount());
+
+        $body = [
+            'MERCHANT' => $this->config->get('merchant'),
+            'ORDER_REF' => $request->getOrderId(),
+            'ORDER_DATE' => gmdate('Y-m-d H:i:s'),
+            'ORDER_PNAME[]' => $request->getDescription() ?? 'Ödeme',
+            'ORDER_PCODE[]' => $request->getOrderId(),
+            'ORDER_PPRICE[]' => $amount,
+            'ORDER_PQTY[]' => '1',
+            'ORDER_PRICE_TYPE[]' => 'GROSS',
+            'PRICES_CURRENCY' => $request->getCurrency(),
+            'PAY_METHOD' => 'CCVISAMC',
+            'CC_NUMBER' => $card->cardNumber,
+            'EXP_MONTH' => $card->expireMonth,
+            'EXP_YEAR' => $card->expireYear,
+            'CC_CVV' => $card->cvv,
+            'CC_OWNER' => $card->cardHolderName,
+            'SELECTED_INSTALLMENTS_NUMBER' => (string) $request->getInstallmentCount(),
+            'CLIENT_IP' => $customer?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
+            'BILL_FNAME' => $customer?->firstName ?? '',
+            'BILL_LNAME' => $customer?->lastName ?? '',
+            'BILL_EMAIL' => $customer?->email ?? '',
+            'BILL_PHONE' => $customer?->phone ?? '',
+            'BILL_ADDRESS' => $billingAddress?->address ?? '',
+            'BILL_CITY' => $billingAddress?->city ?? '',
+            'BILL_COUNTRYCODE' => $billingAddress?->country ?? 'TR',
+            'ORDER_HASH' => $this->generateSignature(
+                $request->getOrderId(),
+                $amount,
+                $request->getCurrency(),
+            ),
+        ];
+
+        $response = $this->httpClient->post(
+            $this->getActiveBaseUrl() . '/order/alu/v3',
+            $this->buildHeaders(),
+            json_encode($body, JSON_THROW_ON_ERROR),
+        );
+        $data = $response->toArray();
+
+        if (($data['STATUS'] ?? '') === 'SUCCESS' || ($data['RETURN_CODE'] ?? '') === 'AUTHORIZED') {
+            return PaymentResponse::successful(
+                transactionId: $data['REFNO'] ?? '',
+                orderId: $data['ORDER_REF'] ?? $request->getOrderId(),
+                amount: $request->getAmount(),
+                rawResponse: $data,
+            );
+        }
+
+        return PaymentResponse::failed(
+            errorCode: $data['RETURN_CODE'] ?? 'UNKNOWN',
+            errorMessage: $data['RETURN_MESSAGE'] ?? 'PayU ödeme başarısız.',
+            rawResponse: $data,
+        );
+    }
+
+    public function payInstallment(PaymentRequest $request): PaymentResponse
+    {
+        return $this->pay($request);
+    }
+
+    public function refund(RefundRequest $request): RefundResponse
+    {
+        $body = [
+            'MERCHANT' => $this->config->get('merchant'),
+            'ORDER_REF' => $request->getOrderId(),
+            'ORDER_AMOUNT' => MoneyFormatter::toDecimalString($request->getAmount()),
+            'ORDER_CURRENCY' => 'TRY',
+            'IRN_DATE' => gmdate('Y-m-d H:i:s'),
+            'AMOUNT' => MoneyFormatter::toDecimalString($request->getAmount()),
+        ];
+
+        $response = $this->httpClient->post(
+            $this->getActiveBaseUrl() . '/order/irn',
+            $this->buildHeaders(),
+            json_encode($body, JSON_THROW_ON_ERROR),
+        );
+        $data = $response->toArray();
+
+        if (($data['RESPONSE_CODE'] ?? '') === '0' || ($data['STATUS'] ?? '') === 'SUCCESS') {
+            return RefundResponse::successful(
+                transactionId: $data['IRN_REFNO'] ?? $request->getTransactionId(),
+                refundedAmount: $request->getAmount(),
+                rawResponse: $data,
+            );
+        }
+
+        return RefundResponse::failed(
+            errorCode: $data['RESPONSE_CODE'] ?? 'UNKNOWN',
+            errorMessage: $data['RESPONSE_MSG'] ?? 'PayU iade başarısız.',
+            rawResponse: $data,
+        );
+    }
+
+    public function query(QueryRequest $request): QueryResponse
+    {
+        $body = [
+            'MERCHANT' => $this->config->get('merchant'),
+            'ORDER_REF' => $request->getOrderId() ?: $request->getTransactionId(),
+        ];
+
+        $response = $this->httpClient->post(
+            $this->getActiveBaseUrl() . '/order/ios',
+            $this->buildHeaders(),
+            json_encode($body, JSON_THROW_ON_ERROR),
+        );
+        $data = $response->toArray();
+
+        $orderStatus = $data['ORDER_STATUS'] ?? '';
+        $status = match ($orderStatus) {
+            'PAYMENT_AUTHORIZED', 'COMPLETE' => PaymentStatus::Successful,
+            'PAYMENT_RECEIVED', 'IN_PROGRESS' => PaymentStatus::Pending,
+            'REVERSED', 'REFUND' => PaymentStatus::Refunded,
+            'CANCELED' => PaymentStatus::Cancelled,
+            default => PaymentStatus::Failed,
+        };
+
+        if (!empty($data['ORDER_REF'])) {
+            return QueryResponse::successful(
+                transactionId: $data['REFNO'] ?? '',
+                orderId: $data['ORDER_REF'] ?? '',
+                amount: (float) ($data['ORDER_AMOUNT'] ?? 0),
+                status: $status,
+                rawResponse: $data,
+            );
+        }
+
+        return QueryResponse::failed(
+            errorCode: $data['RESPONSE_CODE'] ?? 'UNKNOWN',
+            errorMessage: $data['RESPONSE_MSG'] ?? 'PayU sorgu başarısız.',
+            rawResponse: $data,
+        );
+    }
+
+    public function initSecurePayment(SecurePaymentRequest $request): SecureInitResponse
+    {
+        $card = $request->getCard();
+        if (null === $card) {
+            return SecureInitResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
+        }
+
+        $customer = $request->getCustomer();
+        $amount = MoneyFormatter::toDecimalString($request->getAmount());
+
+        $body = [
+            'MERCHANT' => $this->config->get('merchant'),
+            'ORDER_REF' => $request->getOrderId(),
+            'ORDER_DATE' => gmdate('Y-m-d H:i:s'),
+            'ORDER_PNAME[]' => $request->getDescription() ?? 'Ödeme',
+            'ORDER_PCODE[]' => $request->getOrderId(),
+            'ORDER_PPRICE[]' => $amount,
+            'ORDER_PQTY[]' => '1',
+            'PRICES_CURRENCY' => $request->getCurrency(),
+            'PAY_METHOD' => 'CCVISAMC',
+            'CC_NUMBER' => $card->cardNumber,
+            'EXP_MONTH' => $card->expireMonth,
+            'EXP_YEAR' => $card->expireYear,
+            'CC_CVV' => $card->cvv,
+            'CC_OWNER' => $card->cardHolderName,
+            'SELECTED_INSTALLMENTS_NUMBER' => (string) $request->getInstallmentCount(),
+            '3DS_ENROLLED' => 'YES',
+            'BACK_REF' => $request->getSuccessUrl() ?: $request->getCallbackUrl(),
+            'CLIENT_IP' => $customer?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
+            'BILL_FNAME' => $customer?->firstName ?? '',
+            'BILL_LNAME' => $customer?->lastName ?? '',
+            'BILL_EMAIL' => $customer?->email ?? '',
+            'ORDER_HASH' => $this->generateSignature(
+                $request->getOrderId(),
+                $amount,
+                $request->getCurrency(),
+            ),
+        ];
+
+        $response = $this->httpClient->post(
+            $this->getActiveBaseUrl() . '/order/alu/v3',
+            $this->buildHeaders(),
+            json_encode($body, JSON_THROW_ON_ERROR),
+        );
+        $data = $response->toArray();
+
+        if (isset($data['URL_3DS'])) {
+            return SecureInitResponse::redirect($data['URL_3DS'], [], $data);
+        }
+
+        if (isset($data['3DS_HTML'])) {
+            return SecureInitResponse::html($data['3DS_HTML'], $data);
+        }
+
+        return SecureInitResponse::failed(
+            errorCode: $data['RETURN_CODE'] ?? 'UNKNOWN',
+            errorMessage: $data['RETURN_MESSAGE'] ?? 'PayU 3D Secure başlatma başarısız.',
+            rawResponse: $data,
+        );
+    }
+
+    public function completeSecurePayment(SecureCallbackData $data): PaymentResponse
+    {
+        $status = $data->get('STATUS', $data->get('status', ''));
+
+        if ('SUCCESS' === $status || 'AUTHORIZED' === $status) {
+            return PaymentResponse::successful(
+                transactionId: (string) $data->get('REFNO', $data->get('refno', '')),
+                orderId: (string) $data->get('ORDER_REF', $data->get('order_ref', '')),
+                amount: (float) $data->get('ORDER_AMOUNT', $data->get('amount', 0)),
+                rawResponse: $data->toArray(),
+            );
+        }
+
+        return PaymentResponse::failed(
+            errorCode: (string) $data->get('RETURN_CODE', 'UNKNOWN'),
+            errorMessage: (string) $data->get('RETURN_MESSAGE', 'PayU 3D Secure ödeme başarısız.'),
+            rawResponse: $data->toArray(),
+        );
+    }
+
+    public function createSubscription(SubscriptionRequest $request): SubscriptionResponse
+    {
+        $card = $request->getCard();
+        if (null === $card) {
+            return SubscriptionResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
+        }
+
+        $customer = $request->getCustomer();
+
+        $body = [
+            'MERCHANT' => $this->config->get('merchant'),
+            'REF_NO' => uniqid('SUB_', true),
+            'PLAN_NAME' => $request->getPlanName(),
+            'AMOUNT' => MoneyFormatter::toDecimalString($request->getAmount()),
+            'CURRENCY' => $request->getCurrency(),
+            'PERIOD' => $request->getPeriod(),
+            'PERIOD_INTERVAL' => (string) $request->getPeriodInterval(),
+            'CC_NUMBER' => $card->cardNumber,
+            'EXP_MONTH' => $card->expireMonth,
+            'EXP_YEAR' => $card->expireYear,
+            'CC_CVV' => $card->cvv,
+            'CC_OWNER' => $card->cardHolderName,
+            'SUBSCRIBER_FNAME' => $customer?->firstName ?? '',
+            'SUBSCRIBER_LNAME' => $customer?->lastName ?? '',
+            'SUBSCRIBER_EMAIL' => $customer?->email ?? '',
+        ];
+
+        $response = $this->httpClient->post(
+            $this->getActiveBaseUrl() . '/order/tokens/',
+            $this->buildHeaders(),
+            json_encode($body, JSON_THROW_ON_ERROR),
+        );
+        $data = $response->toArray();
+
+        if (($data['STATUS'] ?? '') === 'SUCCESS') {
+            return SubscriptionResponse::successful(
+                subscriptionId: $data['IPN_CC_TOKEN'] ?? $data['TOKEN'] ?? '',
+                rawResponse: $data,
+            );
+        }
+
+        return SubscriptionResponse::failed(
+            errorCode: $data['RETURN_CODE'] ?? 'UNKNOWN',
+            errorMessage: $data['RETURN_MESSAGE'] ?? 'PayU abonelik oluşturma başarısız.',
+            rawResponse: $data,
+        );
+    }
+
+    public function cancelSubscription(string $subscriptionId): SubscriptionResponse
+    {
+        $body = [
+            'MERCHANT' => $this->config->get('merchant'),
+            'TOKEN' => $subscriptionId,
+        ];
+
+        $response = $this->httpClient->post(
+            $this->getActiveBaseUrl() . '/order/tokens/cancel/',
+            $this->buildHeaders(),
+            json_encode($body, JSON_THROW_ON_ERROR),
+        );
+        $data = $response->toArray();
+
+        if (($data['STATUS'] ?? '') === 'SUCCESS') {
+            return SubscriptionResponse::successful($subscriptionId, 'cancelled', $data);
+        }
+
+        return SubscriptionResponse::failed(
+            errorCode: $data['RETURN_CODE'] ?? 'UNKNOWN',
+            errorMessage: $data['RETURN_MESSAGE'] ?? 'PayU abonelik iptali başarısız.',
+            rawResponse: $data,
+        );
+    }
+
     protected function getRequiredConfigKeys(): array
     {
         return ['merchant', 'secret_key'];
@@ -100,305 +398,7 @@ class PayUGateway extends AbstractGateway implements PayableInterface, Refundabl
     {
         return [
             'Content-Type' => 'application/json',
-            'Accept'       => 'application/json',
+            'Accept' => 'application/json',
         ];
-    }
-
-    public function pay(PaymentRequest $request): PaymentResponse
-    {
-        $card = $request->getCard();
-        if ($card === null) {
-            return PaymentResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
-        }
-
-        $customer = $request->getCustomer();
-        $billingAddress = $request->getBillingAddress();
-        $amount = MoneyFormatter::toDecimalString($request->getAmount());
-
-        $body = [
-            'MERCHANT'        => $this->config->get('merchant'),
-            'ORDER_REF'       => $request->getOrderId(),
-            'ORDER_DATE'      => gmdate('Y-m-d H:i:s'),
-            'ORDER_PNAME[]'   => $request->getDescription() ?? 'Ödeme',
-            'ORDER_PCODE[]'   => $request->getOrderId(),
-            'ORDER_PPRICE[]'  => $amount,
-            'ORDER_PQTY[]'    => '1',
-            'ORDER_PRICE_TYPE[]' => 'GROSS',
-            'PRICES_CURRENCY' => $request->getCurrency(),
-            'PAY_METHOD'      => 'CCVISAMC',
-            'CC_NUMBER'       => $card->cardNumber,
-            'EXP_MONTH'       => $card->expireMonth,
-            'EXP_YEAR'        => $card->expireYear,
-            'CC_CVV'          => $card->cvv,
-            'CC_OWNER'        => $card->cardHolderName,
-            'SELECTED_INSTALLMENTS_NUMBER' => (string) $request->getInstallmentCount(),
-            'CLIENT_IP'       => $customer?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
-            'BILL_FNAME'      => $customer?->firstName ?? '',
-            'BILL_LNAME'      => $customer?->lastName ?? '',
-            'BILL_EMAIL'      => $customer?->email ?? '',
-            'BILL_PHONE'      => $customer?->phone ?? '',
-            'BILL_ADDRESS'    => $billingAddress?->address ?? '',
-            'BILL_CITY'       => $billingAddress?->city ?? '',
-            'BILL_COUNTRYCODE' => $billingAddress?->country ?? 'TR',
-            'ORDER_HASH'      => $this->generateSignature(
-                $request->getOrderId(),
-                $amount,
-                $request->getCurrency(),
-            ),
-        ];
-
-        $response = $this->httpClient->post(
-            $this->getActiveBaseUrl() . '/order/alu/v3',
-            $this->buildHeaders(),
-            json_encode($body, JSON_THROW_ON_ERROR),
-        );
-        $data = $response->toArray();
-
-        if (($data['STATUS'] ?? '') === 'SUCCESS' || ($data['RETURN_CODE'] ?? '') === 'AUTHORIZED') {
-            return PaymentResponse::successful(
-                transactionId: $data['REFNO'] ?? '',
-                orderId: $data['ORDER_REF'] ?? $request->getOrderId(),
-                amount: $request->getAmount(),
-                rawResponse: $data,
-            );
-        }
-
-        return PaymentResponse::failed(
-            errorCode: $data['RETURN_CODE'] ?? 'UNKNOWN',
-            errorMessage: $data['RETURN_MESSAGE'] ?? 'PayU ödeme başarısız.',
-            rawResponse: $data,
-        );
-    }
-
-    public function payInstallment(PaymentRequest $request): PaymentResponse
-    {
-        return $this->pay($request);
-    }
-
-    public function refund(RefundRequest $request): RefundResponse
-    {
-        $body = [
-            'MERCHANT'     => $this->config->get('merchant'),
-            'ORDER_REF'    => $request->getOrderId(),
-            'ORDER_AMOUNT' => MoneyFormatter::toDecimalString($request->getAmount()),
-            'ORDER_CURRENCY' => 'TRY',
-            'IRN_DATE'     => gmdate('Y-m-d H:i:s'),
-            'AMOUNT'       => MoneyFormatter::toDecimalString($request->getAmount()),
-        ];
-
-        $response = $this->httpClient->post(
-            $this->getActiveBaseUrl() . '/order/irn',
-            $this->buildHeaders(),
-            json_encode($body, JSON_THROW_ON_ERROR),
-        );
-        $data = $response->toArray();
-
-        if (($data['RESPONSE_CODE'] ?? '') === '0' || ($data['STATUS'] ?? '') === 'SUCCESS') {
-            return RefundResponse::successful(
-                transactionId: $data['IRN_REFNO'] ?? $request->getTransactionId(),
-                refundedAmount: $request->getAmount(),
-                rawResponse: $data,
-            );
-        }
-
-        return RefundResponse::failed(
-            errorCode: $data['RESPONSE_CODE'] ?? 'UNKNOWN',
-            errorMessage: $data['RESPONSE_MSG'] ?? 'PayU iade başarısız.',
-            rawResponse: $data,
-        );
-    }
-
-    public function query(QueryRequest $request): QueryResponse
-    {
-        $body = [
-            'MERCHANT'  => $this->config->get('merchant'),
-            'ORDER_REF' => $request->getOrderId() ?: $request->getTransactionId(),
-        ];
-
-        $response = $this->httpClient->post(
-            $this->getActiveBaseUrl() . '/order/ios',
-            $this->buildHeaders(),
-            json_encode($body, JSON_THROW_ON_ERROR),
-        );
-        $data = $response->toArray();
-
-        $orderStatus = $data['ORDER_STATUS'] ?? '';
-        $status = match ($orderStatus) {
-            'PAYMENT_AUTHORIZED', 'COMPLETE' => PaymentStatus::Successful,
-            'PAYMENT_RECEIVED', 'IN_PROGRESS' => PaymentStatus::Pending,
-            'REVERSED', 'REFUND'             => PaymentStatus::Refunded,
-            'CANCELED'                        => PaymentStatus::Cancelled,
-            default                           => PaymentStatus::Failed,
-        };
-
-        if (!empty($data['ORDER_REF'])) {
-            return QueryResponse::successful(
-                transactionId: $data['REFNO'] ?? '',
-                orderId: $data['ORDER_REF'] ?? '',
-                amount: (float) ($data['ORDER_AMOUNT'] ?? 0),
-                status: $status,
-                rawResponse: $data,
-            );
-        }
-
-        return QueryResponse::failed(
-            errorCode: $data['RESPONSE_CODE'] ?? 'UNKNOWN',
-            errorMessage: $data['RESPONSE_MSG'] ?? 'PayU sorgu başarısız.',
-            rawResponse: $data,
-        );
-    }
-
-    public function initSecurePayment(SecurePaymentRequest $request): SecureInitResponse
-    {
-        $card = $request->getCard();
-        if ($card === null) {
-            return SecureInitResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
-        }
-
-        $customer = $request->getCustomer();
-        $amount = MoneyFormatter::toDecimalString($request->getAmount());
-
-        $body = [
-            'MERCHANT'          => $this->config->get('merchant'),
-            'ORDER_REF'         => $request->getOrderId(),
-            'ORDER_DATE'        => gmdate('Y-m-d H:i:s'),
-            'ORDER_PNAME[]'     => $request->getDescription() ?? 'Ödeme',
-            'ORDER_PCODE[]'     => $request->getOrderId(),
-            'ORDER_PPRICE[]'    => $amount,
-            'ORDER_PQTY[]'      => '1',
-            'PRICES_CURRENCY'   => $request->getCurrency(),
-            'PAY_METHOD'        => 'CCVISAMC',
-            'CC_NUMBER'         => $card->cardNumber,
-            'EXP_MONTH'         => $card->expireMonth,
-            'EXP_YEAR'          => $card->expireYear,
-            'CC_CVV'            => $card->cvv,
-            'CC_OWNER'          => $card->cardHolderName,
-            'SELECTED_INSTALLMENTS_NUMBER' => (string) $request->getInstallmentCount(),
-            '3DS_ENROLLED'      => 'YES',
-            'BACK_REF'          => $request->getSuccessUrl() ?: $request->getCallbackUrl(),
-            'CLIENT_IP'         => $customer?->ip ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
-            'BILL_FNAME'        => $customer?->firstName ?? '',
-            'BILL_LNAME'        => $customer?->lastName ?? '',
-            'BILL_EMAIL'        => $customer?->email ?? '',
-            'ORDER_HASH'        => $this->generateSignature(
-                $request->getOrderId(),
-                $amount,
-                $request->getCurrency(),
-            ),
-        ];
-
-        $response = $this->httpClient->post(
-            $this->getActiveBaseUrl() . '/order/alu/v3',
-            $this->buildHeaders(),
-            json_encode($body, JSON_THROW_ON_ERROR),
-        );
-        $data = $response->toArray();
-
-        if (isset($data['URL_3DS'])) {
-            return SecureInitResponse::redirect($data['URL_3DS'], [], $data);
-        }
-
-        if (isset($data['3DS_HTML'])) {
-            return SecureInitResponse::html($data['3DS_HTML'], $data);
-        }
-
-        return SecureInitResponse::failed(
-            errorCode: $data['RETURN_CODE'] ?? 'UNKNOWN',
-            errorMessage: $data['RETURN_MESSAGE'] ?? 'PayU 3D Secure başlatma başarısız.',
-            rawResponse: $data,
-        );
-    }
-
-    public function completeSecurePayment(SecureCallbackData $data): PaymentResponse
-    {
-        $status = $data->get('STATUS', $data->get('status', ''));
-
-        if ($status === 'SUCCESS' || $status === 'AUTHORIZED') {
-            return PaymentResponse::successful(
-                transactionId: (string) $data->get('REFNO', $data->get('refno', '')),
-                orderId: (string) $data->get('ORDER_REF', $data->get('order_ref', '')),
-                amount: (float) $data->get('ORDER_AMOUNT', $data->get('amount', 0)),
-                rawResponse: $data->toArray(),
-            );
-        }
-
-        return PaymentResponse::failed(
-            errorCode: (string) $data->get('RETURN_CODE', 'UNKNOWN'),
-            errorMessage: (string) $data->get('RETURN_MESSAGE', 'PayU 3D Secure ödeme başarısız.'),
-            rawResponse: $data->toArray(),
-        );
-    }
-
-    public function createSubscription(SubscriptionRequest $request): SubscriptionResponse
-    {
-        $card = $request->getCard();
-        if ($card === null) {
-            return SubscriptionResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
-        }
-
-        $customer = $request->getCustomer();
-
-        $body = [
-            'MERCHANT'            => $this->config->get('merchant'),
-            'REF_NO'              => uniqid('SUB_', true),
-            'PLAN_NAME'           => $request->getPlanName(),
-            'AMOUNT'              => MoneyFormatter::toDecimalString($request->getAmount()),
-            'CURRENCY'            => $request->getCurrency(),
-            'PERIOD'              => $request->getPeriod(),
-            'PERIOD_INTERVAL'     => (string) $request->getPeriodInterval(),
-            'CC_NUMBER'           => $card->cardNumber,
-            'EXP_MONTH'           => $card->expireMonth,
-            'EXP_YEAR'            => $card->expireYear,
-            'CC_CVV'              => $card->cvv,
-            'CC_OWNER'            => $card->cardHolderName,
-            'SUBSCRIBER_FNAME'    => $customer?->firstName ?? '',
-            'SUBSCRIBER_LNAME'    => $customer?->lastName ?? '',
-            'SUBSCRIBER_EMAIL'    => $customer?->email ?? '',
-        ];
-
-        $response = $this->httpClient->post(
-            $this->getActiveBaseUrl() . '/order/tokens/',
-            $this->buildHeaders(),
-            json_encode($body, JSON_THROW_ON_ERROR),
-        );
-        $data = $response->toArray();
-
-        if (($data['STATUS'] ?? '') === 'SUCCESS') {
-            return SubscriptionResponse::successful(
-                subscriptionId: $data['IPN_CC_TOKEN'] ?? $data['TOKEN'] ?? '',
-                rawResponse: $data,
-            );
-        }
-
-        return SubscriptionResponse::failed(
-            errorCode: $data['RETURN_CODE'] ?? 'UNKNOWN',
-            errorMessage: $data['RETURN_MESSAGE'] ?? 'PayU abonelik oluşturma başarısız.',
-            rawResponse: $data,
-        );
-    }
-
-    public function cancelSubscription(string $subscriptionId): SubscriptionResponse
-    {
-        $body = [
-            'MERCHANT' => $this->config->get('merchant'),
-            'TOKEN'    => $subscriptionId,
-        ];
-
-        $response = $this->httpClient->post(
-            $this->getActiveBaseUrl() . '/order/tokens/cancel/',
-            $this->buildHeaders(),
-            json_encode($body, JSON_THROW_ON_ERROR),
-        );
-        $data = $response->toArray();
-
-        if (($data['STATUS'] ?? '') === 'SUCCESS') {
-            return SubscriptionResponse::successful($subscriptionId, 'cancelled', $data);
-        }
-
-        return SubscriptionResponse::failed(
-            errorCode: $data['RETURN_CODE'] ?? 'UNKNOWN',
-            errorMessage: $data['RETURN_MESSAGE'] ?? 'PayU abonelik iptali başarısız.',
-            rawResponse: $data,
-        );
     }
 }

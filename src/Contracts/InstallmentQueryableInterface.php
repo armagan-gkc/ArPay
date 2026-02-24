@@ -20,7 +20,8 @@ interface InstallmentQueryableInterface
      * Kart BIN numarasına göre taksit seçeneklerini sorgular.
      *
      * @param string $binNumber Kart numarasının ilk 6-8 hanesi
-     * @param float  $amount    Toplam tutar (TL cinsinden)
+     * @param float $amount Toplam tutar (TL cinsinden)
+     *
      * @return InstallmentInfo[] Taksit seçenekleri listesi
      */
     public function queryInstallments(string $binNumber, float $amount): array;

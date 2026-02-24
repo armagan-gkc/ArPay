@@ -20,8 +20,7 @@ class RefundResponse implements \JsonSerializable
         protected readonly string $errorCode = '',
         protected readonly string $errorMessage = '',
         protected readonly array $rawResponse = [],
-    ) {
-    }
+    ) {}
 
     /**
      * Başarılı iade yanıtı oluşturur.
@@ -96,12 +95,12 @@ class RefundResponse implements \JsonSerializable
     public function toArray(): array
     {
         return [
-            'successful'      => $this->successful,
-            'transaction_id'  => $this->transactionId,
+            'successful' => $this->successful,
+            'transaction_id' => $this->transactionId,
             'refunded_amount' => $this->refundedAmount,
-            'error_code'      => $this->errorCode,
-            'error_message'   => $this->errorMessage,
-            'raw_response'    => $this->rawResponse,
+            'error_code' => $this->errorCode,
+            'error_message' => $this->errorMessage,
+            'raw_response' => $this->rawResponse,
         ];
     }
 

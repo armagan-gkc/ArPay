@@ -16,6 +16,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Papara Gateway birim testleri.
+ *
+ * @internal
+ *
+ * @coversNothing
  */
 class PaparaGatewayTest extends TestCase
 {
@@ -28,9 +32,9 @@ class PaparaGatewayTest extends TestCase
         $this->httpClient = new MockHttpClient();
 
         $this->gateway->configure(new Config([
-            'api_key'     => 'test_api_key',
+            'api_key' => 'test_api_key',
             'merchant_id' => 'TEST_MID',
-            'test_mode'   => true,
+            'test_mode' => true,
         ]));
         $this->gateway->setHttpClient($this->httpClient);
     }
@@ -54,8 +58,8 @@ class PaparaGatewayTest extends TestCase
         $this->httpClient->addResponse(200, [
             'succeeded' => true,
             'data' => [
-                'id'          => 'PAP-TXN-001',
-                'paymentId'   => 'PAP-TXN-001',
+                'id' => 'PAP-TXN-001',
+                'paymentId' => 'PAP-TXN-001',
                 'referenceId' => 'ORDER-PAP-001',
             ],
         ]);
@@ -78,7 +82,7 @@ class PaparaGatewayTest extends TestCase
         $this->httpClient->addResponse(200, [
             'succeeded' => false,
             'error' => [
-                'code'    => 'DECLINED',
+                'code' => 'DECLINED',
                 'message' => 'İşlem reddedildi.',
             ],
         ]);
@@ -129,10 +133,10 @@ class PaparaGatewayTest extends TestCase
         $this->httpClient->addResponse(200, [
             'succeeded' => true,
             'data' => [
-                'id'          => 'PAP-TXN-001',
+                'id' => 'PAP-TXN-001',
                 'referenceId' => 'ORDER-PAP-001',
-                'amount'      => 100.00,
-                'status'      => 1,
+                'amount' => 100.00,
+                'status' => 1,
             ],
         ]);
 
@@ -156,7 +160,7 @@ class PaparaGatewayTest extends TestCase
             PaymentRequest::create()
                 ->amount(100.00)
                 ->orderId('ORDER-URL-TEST')
-                ->card(CreditCard::create('Test', '5528790000000008', '12', '2030', '123'))
+                ->card(CreditCard::create('Test', '5528790000000008', '12', '2030', '123')),
         );
 
         $lastRequest = $this->httpClient->getLastRequest();

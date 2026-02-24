@@ -21,6 +21,7 @@ interface SubscribableInterface
      * Yeni abonelik / tekrarlayan ödeme planı oluşturur.
      *
      * @param SubscriptionRequest $request Abonelik istek bilgileri
+     *
      * @return SubscriptionResponse Abonelik sonucu
      */
     public function createSubscription(SubscriptionRequest $request): SubscriptionResponse;
@@ -29,6 +30,7 @@ interface SubscribableInterface
      * Mevcut bir aboneliği iptal eder.
      *
      * @param string $subscriptionId Abonelik kimlik numarası
+     *
      * @return SubscriptionResponse İptal sonucu
      */
     public function cancelSubscription(string $subscriptionId): SubscriptionResponse;

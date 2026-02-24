@@ -53,10 +53,10 @@ class MockHttpClient implements HttpClientInterface
     public function post(string $url, array $headers = [], array|string $body = []): HttpResponse
     {
         $this->requests[] = [
-            'method'  => 'POST',
-            'url'     => $url,
+            'method' => 'POST',
+            'url' => $url,
             'headers' => $headers,
-            'body'    => $body,
+            'body' => $body,
         ];
 
         return array_shift($this->responses) ?? new HttpResponse(500, '{"error":"Yanıt tanımlanmadı"}');
@@ -65,10 +65,10 @@ class MockHttpClient implements HttpClientInterface
     public function get(string $url, array $headers = [], array $query = []): HttpResponse
     {
         $this->requests[] = [
-            'method'  => 'GET',
-            'url'     => $url,
+            'method' => 'GET',
+            'url' => $url,
             'headers' => $headers,
-            'body'    => $query,
+            'body' => $query,
         ];
 
         return array_shift($this->responses) ?? new HttpResponse(500, '{"error":"Yanıt tanımlanmadı"}');

@@ -16,6 +16,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * ParamPos Gateway birim testleri.
+ *
+ * @internal
+ *
+ * @coversNothing
  */
 class ParamPosGatewayTest extends TestCase
 {
@@ -28,11 +32,11 @@ class ParamPosGatewayTest extends TestCase
         $this->httpClient = new MockHttpClient();
 
         $this->gateway->configure(new Config([
-            'client_code'     => 'TEST_CODE',
+            'client_code' => 'TEST_CODE',
             'client_username' => 'test_user',
             'client_password' => 'test_pass',
-            'guid'            => 'TEST-GUID-1234',
-            'test_mode'       => true,
+            'guid' => 'TEST-GUID-1234',
+            'test_mode' => true,
         ]));
         $this->gateway->setHttpClient($this->httpClient);
     }
@@ -55,7 +59,7 @@ class ParamPosGatewayTest extends TestCase
     public function test_successful_payment(): void
     {
         $this->httpClient->addResponse(200, [
-            'Sonuc'     => '1',
+            'Sonuc' => '1',
             'Sonuc_Str' => '00',
             'Dekont_ID' => 'PP-TXN-001',
         ]);
@@ -76,7 +80,7 @@ class ParamPosGatewayTest extends TestCase
     public function test_failed_payment(): void
     {
         $this->httpClient->addResponse(200, [
-            'Sonuc'     => '0',
+            'Sonuc' => '0',
             'Sonuc_Str' => 'DECLINED',
             'Sonuc_Ack' => 'Kart reddedildi.',
         ]);
@@ -106,7 +110,7 @@ class ParamPosGatewayTest extends TestCase
     public function test_successful_refund(): void
     {
         $this->httpClient->addResponse(200, [
-            'Sonuc'     => '1',
+            'Sonuc' => '1',
             'Dekont_ID' => 'PP-REF-001',
         ]);
 
@@ -123,10 +127,10 @@ class ParamPosGatewayTest extends TestCase
     public function test_successful_query(): void
     {
         $this->httpClient->addResponse(200, [
-            'Sonuc'      => '1',
-            'Dekont_ID'  => 'PP-TXN-001',
+            'Sonuc' => '1',
+            'Dekont_ID' => 'PP-TXN-001',
             'Siparis_ID' => 'ORDER-PP-001',
-            'Tutar'      => '30000',
+            'Tutar' => '30000',
         ]);
 
         $request = QueryRequest::create()
@@ -146,7 +150,7 @@ class ParamPosGatewayTest extends TestCase
             PaymentRequest::create()
                 ->amount(100.00)
                 ->orderId('ORDER-URL-TEST')
-                ->card(CreditCard::create('Test', '5528790000000008', '12', '2030', '123'))
+                ->card(CreditCard::create('Test', '5528790000000008', '12', '2030', '123')),
         );
 
         $lastRequest = $this->httpClient->getLastRequest();

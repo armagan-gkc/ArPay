@@ -45,10 +45,34 @@ class Config
     }
 
     /**
+     * Magic getter — $config->merchant_id şeklinde erişim sağlar.
+     */
+    public function __get(string $name): mixed
+    {
+        return $this->get($name);
+    }
+
+    /**
+     * Magic setter — $config->merchant_id = 'xxx' şeklinde atama sağlar.
+     */
+    public function __set(string $name, mixed $value): void
+    {
+        $this->set($name, $value);
+    }
+
+    /**
+     * Magic isset — isset($config->merchant_id) kontrolü sağlar.
+     */
+    public function __isset(string $name): bool
+    {
+        return $this->has($name);
+    }
+
+    /**
      * Yapılandırma değerini döndürür.
      *
-     * @param string $key     Anahtar adı
-     * @param mixed  $default Değer bulunamazsa döndürülecek varsayılan
+     * @param string $key Anahtar adı
+     * @param mixed $default Değer bulunamazsa döndürülecek varsayılan
      */
     public function get(string $key, mixed $default = null): mixed
     {
@@ -89,41 +113,18 @@ class Config
      * Eksik alan varsa InvalidParameterException fırlatır.
      *
      * @param string[] $requiredKeys Zorunlu alan adları
+     *
      * @throws InvalidParameterException Eksik veya boş alan varsa
      */
     public function validateRequired(array $requiredKeys): void
     {
         foreach ($requiredKeys as $key) {
-            if (!$this->has($key) || $this->get($key) === '' || $this->get($key) === null) {
+            if (!$this->has($key) || '' === $this->get($key) || null === $this->get($key)) {
                 throw new InvalidParameterException(
                     $key,
-                    "Bu yapılandırma alanı zorunludur."
+                    'Bu yapılandırma alanı zorunludur.',
                 );
             }
         }
-    }
-
-    /**
-     * Magic getter — $config->merchant_id şeklinde erişim sağlar.
-     */
-    public function __get(string $name): mixed
-    {
-        return $this->get($name);
-    }
-
-    /**
-     * Magic setter — $config->merchant_id = 'xxx' şeklinde atama sağlar.
-     */
-    public function __set(string $name, mixed $value): void
-    {
-        $this->set($name, $value);
-    }
-
-    /**
-     * Magic isset — isset($config->merchant_id) kontrolü sağlar.
-     */
-    public function __isset(string $name): bool
-    {
-        return $this->has($name);
     }
 }

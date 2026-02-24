@@ -15,9 +15,9 @@ namespace Arpay\Exceptions;
 class NetworkException extends ArpayException
 {
     /**
-     * @param string          $message  Hata açıklaması
-     * @param int             $code     HTTP durum kodu (varsa)
-     * @param \Throwable|null $previous Önceki hata
+     * @param string $message Hata açıklaması
+     * @param int $code HTTP durum kodu (varsa)
+     * @param null|\Throwable $previous Önceki hata
      */
     public function __construct(string $message = 'Ağ hatası oluştu', int $code = 0, ?\Throwable $previous = null)
     {

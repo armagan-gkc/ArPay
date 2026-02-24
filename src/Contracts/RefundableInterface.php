@@ -24,6 +24,7 @@ interface RefundableInterface
      * Tam iade için tutarı orijinal tutar ile aynı yapın.
      *
      * @param RefundRequest $request İade istek bilgileri
+     *
      * @return RefundResponse İade sonucu
      */
     public function refund(RefundRequest $request): RefundResponse;

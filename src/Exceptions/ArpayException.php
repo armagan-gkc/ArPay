@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Arpay\Exceptions;
 
-use Exception;
-
 /**
  * Arpay kütüphanesinin temel hata sınıfı.
  *
@@ -22,6 +20,4 @@ use Exception;
  *
  * @author Armağan Gökce
  */
-abstract class ArpayException extends Exception
-{
-}
+abstract class ArpayException extends \Exception {}

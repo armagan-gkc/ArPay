@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace Arpay\Tests\Unit;
 
-use Arpay\Enums\Gateway;
+use Arpay\Enums\CardType;
 use Arpay\Enums\Currency;
+use Arpay\Enums\Gateway;
 use Arpay\Enums\PaymentStatus;
 use Arpay\Enums\TransactionType;
-use Arpay\Enums\CardType;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Enum sınıfları birim testleri.
+ *
+ * @internal
+ *
+ * @coversNothing
  */
 class EnumTest extends TestCase
 {

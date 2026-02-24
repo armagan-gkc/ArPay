@@ -10,6 +10,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * PaymentResponse DTO birim testleri.
+ *
+ * @internal
+ *
+ * @coversNothing
  */
 class PaymentResponseTest extends TestCase
 {

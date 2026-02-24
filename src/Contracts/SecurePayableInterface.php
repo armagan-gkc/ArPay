@@ -30,6 +30,7 @@ interface SecurePayableInterface
      * yönlendirmek için gerekli HTML formu veya URL'yi içerir.
      *
      * @param SecurePaymentRequest $request 3D Secure ödeme istek bilgileri
+     *
      * @return SecureInitResponse Yönlendirme bilgileri
      */
     public function initSecurePayment(SecurePaymentRequest $request): SecureInitResponse;
@@ -41,6 +42,7 @@ interface SecurePayableInterface
      * ödeme doğrulamasını ve tahsilatı gerçekleştirir.
      *
      * @param SecureCallbackData $data Banka dönüş verileri
+     *
      * @return PaymentResponse Ödeme sonucu
      */
     public function completeSecurePayment(SecureCallbackData $data): PaymentResponse;

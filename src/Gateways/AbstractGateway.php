@@ -42,27 +42,21 @@ abstract class AbstractGateway implements GatewayInterface
         $this->httpClient = new GuzzleHttpClient();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function configure(Config $config): static
     {
         $this->config = $config;
 
-        /* Test modu config'den de ayarlanabilir */
+        // Test modu config'den de ayarlanabilir
         if ($config->has('test_mode')) {
             $this->testMode = (bool) $config->get('test_mode');
         }
 
-        /* Zorunlu alanları kontrol et */
+        // Zorunlu alanları kontrol et
         $this->config->validateRequired($this->getRequiredConfigKeys());
 
         return $this;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function setTestMode(bool $active = true): static
     {
         $this->testMode = $active;
@@ -70,9 +64,6 @@ abstract class AbstractGateway implements GatewayInterface
         return $this;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function isTestMode(): bool
     {
         return $this->testMode;
@@ -131,6 +122,7 @@ abstract class AbstractGateway implements GatewayInterface
      * Desteklemiyorsa UnsupportedOperationException fırlatır.
      *
      * @param string $feature Kontrol edilecek özellik adı
+     *
      * @throws UnsupportedOperationException Özellik desteklenmiyorsa
      */
     protected function ensureSupports(string $feature): void

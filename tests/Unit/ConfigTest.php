@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Arpay\Tests\Unit;
 
-use Arpay\Support\Config;
 use Arpay\Exceptions\InvalidParameterException;
+use Arpay\Support\Config;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Config sınıfı birim testleri.
+ *
+ * @internal
+ *
+ * @coversNothing
  */
 class ConfigTest extends TestCase
 {
@@ -59,7 +63,7 @@ class ConfigTest extends TestCase
         $config = new Config(['api_key' => 'xxx', 'secret' => 'yyy']);
         $config->validateRequired(['api_key', 'secret']);
 
-        /* Hata fırlatılmazsa test başarılı */
+        // Hata fırlatılmazsa test başarılı
         $this->assertTrue(true);
     }
 

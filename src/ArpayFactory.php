@@ -31,7 +31,9 @@ class ArpayFactory
      * Verilen gateway adına göre gateway nesnesi oluşturur.
      *
      * @param string $gatewayName Gateway kısa adı (örn: 'paytr', 'iyzico')
+     *
      * @return GatewayInterface Oluşturulan gateway nesnesi
+     *
      * @throws GatewayNotFoundException Geçersiz gateway adı verildiğinde
      */
     public static function create(string $gatewayName): GatewayInterface
@@ -43,15 +45,15 @@ class ArpayFactory
         }
 
         return match ($gateway) {
-            Gateway::PayTR    => new PayTRGateway(),
-            Gateway::Iyzico   => new IyzicoGateway(),
-            Gateway::Vepara   => new VeparaGateway(),
+            Gateway::PayTR => new PayTRGateway(),
+            Gateway::Iyzico => new IyzicoGateway(),
+            Gateway::Vepara => new VeparaGateway(),
             Gateway::ParamPos => new ParamPosGateway(),
-            Gateway::Ipara    => new IparaGateway(),
-            Gateway::Odeal    => new OdealGateway(),
-            Gateway::Paynet   => new PaynetGateway(),
-            Gateway::PayU     => new PayUGateway(),
-            Gateway::Papara   => new PaparaGateway(),
+            Gateway::Ipara => new IparaGateway(),
+            Gateway::Odeal => new OdealGateway(),
+            Gateway::Paynet => new PaynetGateway(),
+            Gateway::PayU => new PayUGateway(),
+            Gateway::Papara => new PaparaGateway(),
         };
     }
 

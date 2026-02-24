@@ -10,6 +10,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * CreditCard DTO birim testleri.
+ *
+ * @internal
+ *
+ * @coversNothing
  */
 class CreditCardTest extends TestCase
 {
@@ -47,7 +51,7 @@ class CreditCardTest extends TestCase
 
     public function test_luhn_check_valid(): void
     {
-        /* MasterCard test kartı */
+        // MasterCard test kartı
         $this->assertTrue(CreditCard::luhnCheck('5528790000000008'));
     }
 

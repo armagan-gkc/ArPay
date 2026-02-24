@@ -22,9 +22,10 @@ class IyzicoHelper
      * Format: IYZWS {apiKey}:{hash}
      * Hash = Base64( SHA1( apiKey + randomHeaderValue + secretKey + requestBody ) )
      *
-     * @param string $apiKey    API anahtarı
+     * @param string $apiKey API anahtarı
      * @param string $secretKey Gizli anahtar
-     * @param string $body      İstek gövdesi (JSON string)
+     * @param string $body İstek gövdesi (JSON string)
+     *
      * @return array<string, string> İsteke eklenecek header'lar
      */
     public static function generateHeaders(string $apiKey, string $secretKey, string $body = ''): array
@@ -35,9 +36,9 @@ class IyzicoHelper
         $hash = base64_encode(sha1($hashStr, true));
 
         return [
-            'Authorization'        => "IYZWS {$apiKey}:{$hash}",
-            'x-iyzi-rnd'           => $randomHeaderValue,
-            'Content-Type'         => 'application/json',
+            'Authorization' => "IYZWS {$apiKey}:{$hash}",
+            'x-iyzi-rnd' => $randomHeaderValue,
+            'Content-Type' => 'application/json',
             'x-iyzi-client-version' => 'arpay-php-1.0',
         ];
     }
@@ -49,6 +50,7 @@ class IyzicoHelper
      * PKI string formatında veri bekler.
      *
      * @param array<string, mixed> $params Parametre çiftleri
+     *
      * @return string PKI formatında string
      */
     public static function buildPkiString(array $params): string
@@ -56,7 +58,7 @@ class IyzicoHelper
         $parts = [];
 
         foreach ($params as $key => $value) {
-            if ($value === null || $value === '') {
+            if (null === $value || '' === $value) {
                 continue;
             }
 
@@ -79,6 +81,7 @@ class IyzicoHelper
      * Iyzico ondalıklı string tutar bekler: "150.00"
      *
      * @param float $amount TL cinsinden tutar
+     *
      * @return string Iyzico formatında tutar
      */
     public static function formatAmount(float $amount): string
@@ -90,6 +93,7 @@ class IyzicoHelper
      * Sepet ürünlerini Iyzico formatına dönüştürür.
      *
      * @param array<int, array{id: string, name: string, category: string, price: float}> $items
+     *
      * @return array<int, array<string, string>>
      */
     public static function formatBasketItems(array $items): array
@@ -98,11 +102,11 @@ class IyzicoHelper
 
         foreach ($items as $item) {
             $basket[] = [
-                'id'              => $item['id'],
-                'name'            => $item['name'],
-                'category1'       => $item['category'],
-                'itemType'        => 'PHYSICAL',
-                'price'           => self::formatAmount($item['price']),
+                'id' => $item['id'],
+                'name' => $item['name'],
+                'category1' => $item['category'],
+                'itemType' => 'PHYSICAL',
+                'price' => self::formatAmount($item['price']),
             ];
         }
 

@@ -21,6 +21,7 @@ interface PayableInterface
      * Tek çekim ödeme yapar.
      *
      * @param PaymentRequest $request Ödeme istek bilgileri
+     *
      * @return PaymentResponse Ödeme sonucu
      */
     public function pay(PaymentRequest $request): PaymentResponse;
@@ -31,6 +32,7 @@ interface PayableInterface
      * Taksit sayısı PaymentRequest içindeki installmentCount alanından alınır.
      *
      * @param PaymentRequest $request Ödeme istek bilgileri (taksit sayısı dahil)
+     *
      * @return PaymentResponse Ödeme sonucu
      */
     public function payInstallment(PaymentRequest $request): PaymentResponse;

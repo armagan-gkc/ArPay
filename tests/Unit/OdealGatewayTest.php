@@ -16,6 +16,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Ödeal Gateway birim testleri.
+ *
+ * @internal
+ *
+ * @coversNothing
  */
 class OdealGatewayTest extends TestCase
 {
@@ -28,9 +32,9 @@ class OdealGatewayTest extends TestCase
         $this->httpClient = new MockHttpClient();
 
         $this->gateway->configure(new Config([
-            'api_key'    => 'test_api_key',
+            'api_key' => 'test_api_key',
             'secret_key' => 'test_secret_key',
-            'test_mode'  => true,
+            'test_mode' => true,
         ]));
         $this->gateway->setHttpClient($this->httpClient);
     }
@@ -52,9 +56,9 @@ class OdealGatewayTest extends TestCase
     public function test_successful_payment(): void
     {
         $this->httpClient->addResponse(200, [
-            'status'        => 'success',
+            'status' => 'success',
             'transactionId' => 'OD-TXN-001',
-            'orderId'       => 'ORDER-OD-001',
+            'orderId' => 'ORDER-OD-001',
         ]);
 
         $request = PaymentRequest::create()
@@ -73,8 +77,8 @@ class OdealGatewayTest extends TestCase
     public function test_failed_payment(): void
     {
         $this->httpClient->addResponse(200, [
-            'status'       => 'error',
-            'errorCode'    => 'DECLINED',
+            'status' => 'error',
+            'errorCode' => 'DECLINED',
             'errorMessage' => 'Kart reddedildi.',
         ]);
 
@@ -103,7 +107,7 @@ class OdealGatewayTest extends TestCase
     public function test_successful_refund(): void
     {
         $this->httpClient->addResponse(200, [
-            'status'        => 'success',
+            'status' => 'success',
             'transactionId' => 'OD-REF-001',
         ]);
 
@@ -120,10 +124,10 @@ class OdealGatewayTest extends TestCase
     public function test_successful_query(): void
     {
         $this->httpClient->addResponse(200, [
-            'status'        => 'success',
+            'status' => 'success',
             'transactionId' => 'OD-TXN-001',
-            'orderId'       => 'ORDER-OD-001',
-            'amount'        => 17550,
+            'orderId' => 'ORDER-OD-001',
+            'amount' => 17550,
             'paymentStatus' => 'approved',
         ]);
 
@@ -144,7 +148,7 @@ class OdealGatewayTest extends TestCase
             PaymentRequest::create()
                 ->amount(100.00)
                 ->orderId('ORDER-URL-TEST')
-                ->card(CreditCard::create('Test', '5528790000000008', '12', '2030', '123'))
+                ->card(CreditCard::create('Test', '5528790000000008', '12', '2030', '123')),
         );
 
         $lastRequest = $this->httpClient->getLastRequest();

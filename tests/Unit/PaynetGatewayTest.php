@@ -16,6 +16,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Paynet Gateway birim testleri.
+ *
+ * @internal
+ *
+ * @coversNothing
  */
 class PaynetGatewayTest extends TestCase
 {
@@ -28,9 +32,9 @@ class PaynetGatewayTest extends TestCase
         $this->httpClient = new MockHttpClient();
 
         $this->gateway->configure(new Config([
-            'secret_key'  => 'test_secret_key',
+            'secret_key' => 'test_secret_key',
             'merchant_id' => 'TEST_MID',
-            'test_mode'   => true,
+            'test_mode' => true,
         ]));
         $this->gateway->setHttpClient($this->httpClient);
     }
@@ -53,10 +57,10 @@ class PaynetGatewayTest extends TestCase
     public function test_successful_payment(): void
     {
         $this->httpClient->addResponse(200, [
-            'is_successful'  => true,
-            'code'           => '0',
+            'is_successful' => true,
+            'code' => '0',
             'transaction_id' => 'PN-TXN-001',
-            'order_id'       => 'ORDER-PN-001',
+            'order_id' => 'ORDER-PN-001',
         ]);
 
         $request = PaymentRequest::create()
@@ -76,8 +80,8 @@ class PaynetGatewayTest extends TestCase
     {
         $this->httpClient->addResponse(200, [
             'is_successful' => false,
-            'code'          => '99',
-            'message'       => 'Kart reddedildi.',
+            'code' => '99',
+            'message' => 'Kart reddedildi.',
         ]);
 
         $request = PaymentRequest::create()
@@ -105,7 +109,7 @@ class PaynetGatewayTest extends TestCase
     public function test_successful_refund(): void
     {
         $this->httpClient->addResponse(200, [
-            'is_successful'  => true,
+            'is_successful' => true,
             'transaction_id' => 'PN-REF-001',
         ]);
 
@@ -122,10 +126,10 @@ class PaynetGatewayTest extends TestCase
     public function test_successful_query(): void
     {
         $this->httpClient->addResponse(200, [
-            'is_successful'  => true,
+            'is_successful' => true,
             'transaction_id' => 'PN-TXN-001',
-            'order_id'       => 'ORDER-PN-001',
-            'amount'         => 40000,
+            'order_id' => 'ORDER-PN-001',
+            'amount' => 40000,
             'payment_status' => 'approved',
         ]);
 
@@ -146,7 +150,7 @@ class PaynetGatewayTest extends TestCase
             PaymentRequest::create()
                 ->amount(100.00)
                 ->orderId('ORDER-URL-TEST')
-                ->card(CreditCard::create('Test', '5528790000000008', '12', '2030', '123'))
+                ->card(CreditCard::create('Test', '5528790000000008', '12', '2030', '123')),
         );
 
         $lastRequest = $this->httpClient->getLastRequest();

@@ -64,21 +64,6 @@ class VeparaGateway extends AbstractGateway implements PayableInterface, Refunda
         return ['pay', 'payInstallment', 'refund', 'query', '3dsecure', 'installmentQuery'];
     }
 
-    protected function getRequiredConfigKeys(): array
-    {
-        return ['api_key', 'secret_key', 'merchant_id'];
-    }
-
-    protected function getBaseUrl(): string
-    {
-        return self::LIVE_BASE_URL;
-    }
-
-    protected function getTestBaseUrl(): string
-    {
-        return self::SANDBOX_BASE_URL;
-    }
-
     /**
      * Ödeme yapar.
      *
@@ -87,22 +72,22 @@ class VeparaGateway extends AbstractGateway implements PayableInterface, Refunda
     public function pay(PaymentRequest $request): PaymentResponse
     {
         $card = $request->getCard();
-        if ($card === null) {
+        if (null === $card) {
             return PaymentResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
         }
 
         $body = [
-            'merchant_id'      => $this->config->get('merchant_id'),
-            'order_id'         => $request->getOrderId(),
-            'amount'           => MoneyFormatter::toDecimalString($request->getAmount()),
-            'currency'         => $request->getCurrency(),
-            'installment'      => $request->getInstallmentCount(),
+            'merchant_id' => $this->config->get('merchant_id'),
+            'order_id' => $request->getOrderId(),
+            'amount' => MoneyFormatter::toDecimalString($request->getAmount()),
+            'currency' => $request->getCurrency(),
+            'installment' => $request->getInstallmentCount(),
             'card_holder_name' => $card->cardHolderName,
-            'card_number'      => $card->cardNumber,
-            'expire_month'     => $card->expireMonth,
-            'expire_year'      => $card->expireYear,
-            'cvv'              => $card->cvv,
-            'description'      => $request->getDescription(),
+            'card_number' => $card->cardNumber,
+            'expire_month' => $card->expireMonth,
+            'expire_year' => $card->expireYear,
+            'cvv' => $card->cvv,
+            'description' => $request->getDescription(),
         ];
 
         $headers = $this->buildHeaders($body);
@@ -138,9 +123,9 @@ class VeparaGateway extends AbstractGateway implements PayableInterface, Refunda
     public function refund(RefundRequest $request): RefundResponse
     {
         $body = [
-            'merchant_id'    => $this->config->get('merchant_id'),
+            'merchant_id' => $this->config->get('merchant_id'),
             'transaction_id' => $request->getTransactionId() ?: $request->getOrderId(),
-            'amount'         => MoneyFormatter::toDecimalString($request->getAmount()),
+            'amount' => MoneyFormatter::toDecimalString($request->getAmount()),
         ];
 
         $headers = $this->buildHeaders($body);
@@ -170,7 +155,7 @@ class VeparaGateway extends AbstractGateway implements PayableInterface, Refunda
     public function query(QueryRequest $request): QueryResponse
     {
         $body = [
-            'merchant_id'    => $this->config->get('merchant_id'),
+            'merchant_id' => $this->config->get('merchant_id'),
             'transaction_id' => $request->getTransactionId() ?: $request->getOrderId(),
         ];
 
@@ -203,22 +188,22 @@ class VeparaGateway extends AbstractGateway implements PayableInterface, Refunda
     public function initSecurePayment(SecurePaymentRequest $request): SecureInitResponse
     {
         $card = $request->getCard();
-        if ($card === null) {
+        if (null === $card) {
             return SecureInitResponse::failed('CARD_MISSING', 'Kart bilgileri gereklidir.');
         }
 
         $body = [
-            'merchant_id'      => $this->config->get('merchant_id'),
-            'order_id'         => $request->getOrderId(),
-            'amount'           => MoneyFormatter::toDecimalString($request->getAmount()),
-            'currency'         => $request->getCurrency(),
-            'installment'      => $request->getInstallmentCount(),
+            'merchant_id' => $this->config->get('merchant_id'),
+            'order_id' => $request->getOrderId(),
+            'amount' => MoneyFormatter::toDecimalString($request->getAmount()),
+            'currency' => $request->getCurrency(),
+            'installment' => $request->getInstallmentCount(),
             'card_holder_name' => $card->cardHolderName,
-            'card_number'      => $card->cardNumber,
-            'expire_month'     => $card->expireMonth,
-            'expire_year'      => $card->expireYear,
-            'cvv'              => $card->cvv,
-            'callback_url'     => $request->getCallbackUrl(),
+            'card_number' => $card->cardNumber,
+            'expire_month' => $card->expireMonth,
+            'expire_year' => $card->expireYear,
+            'cvv' => $card->cvv,
+            'callback_url' => $request->getCallbackUrl(),
         ];
 
         $headers = $this->buildHeaders($body);
@@ -255,7 +240,7 @@ class VeparaGateway extends AbstractGateway implements PayableInterface, Refunda
         $transactionId = (string) $data->get('transaction_id', '');
         $orderId = (string) $data->get('order_id', '');
 
-        if ($status === 'success' || $status === '1') {
+        if ('success' === $status || '1' === $status) {
             return PaymentResponse::successful(
                 transactionId: $transactionId,
                 orderId: $orderId,
@@ -275,8 +260,8 @@ class VeparaGateway extends AbstractGateway implements PayableInterface, Refunda
     {
         $body = [
             'merchant_id' => $this->config->get('merchant_id'),
-            'bin_number'  => $binNumber,
-            'amount'      => MoneyFormatter::toDecimalString($amount),
+            'bin_number' => $binNumber,
+            'amount' => MoneyFormatter::toDecimalString($amount),
         ];
 
         $headers = $this->buildHeaders($body);
@@ -305,10 +290,26 @@ class VeparaGateway extends AbstractGateway implements PayableInterface, Refunda
         return $installments;
     }
 
+    protected function getRequiredConfigKeys(): array
+    {
+        return ['api_key', 'secret_key', 'merchant_id'];
+    }
+
+    protected function getBaseUrl(): string
+    {
+        return self::LIVE_BASE_URL;
+    }
+
+    protected function getTestBaseUrl(): string
+    {
+        return self::SANDBOX_BASE_URL;
+    }
+
     /**
      * API istekleri için gerekli header'ları oluşturur.
      *
      * @param array<string, mixed> $body İstek gövdesi
+     *
      * @return array<string, string> HTTP başlıkları
      */
     private function buildHeaders(array $body): array
@@ -317,9 +318,9 @@ class VeparaGateway extends AbstractGateway implements PayableInterface, Refunda
         $hash = HashGenerator::hmacSha256($bodyStr, $this->config->get('secret_key'));
 
         return [
-            'Content-Type'  => 'application/json',
+            'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $this->config->get('api_key'),
-            'X-Hash'        => $hash,
+            'X-Hash' => $hash,
         ];
     }
 }

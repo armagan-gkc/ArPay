@@ -9,6 +9,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * HttpResponse birim testleri.
+ *
+ * @internal
+ *
+ * @coversNothing
  */
 class HttpResponseTest extends TestCase
 {
